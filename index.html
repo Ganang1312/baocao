@@ -31,11 +31,13 @@
         .main-header {
             background: linear-gradient(90deg, var(--dmx-blue) 0%, var(--dmx-green) 100%);
             color: var(--text-light);
-            padding: 10px 30px; /* Giảm padding trên dưới một chút cho gọn */
+            padding: 10px 30px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
             display: flex;
             align-items: center;
             gap: 15px;
+            position: relative; /* Quan trọng để z-index hoạt động */
+            z-index: 100; /* Đảm bảo header luôn ở trên */
         }
 
         .main-header .store-icon {
@@ -50,26 +52,31 @@
             font-weight: 600;
         }
 
-        /* --- CSS CHO PHẦN MÃ QR (MỚI) --- */
+        /* --- CSS CHO PHẦN MÃ QR (ĐÃ CHỈNH SỬA LẠI HOÀN TOÀN) --- */
         .qr-container {
-            margin-left: auto; /* Đẩy sang phải cùng */
+            margin-left: auto;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            background-color: rgba(255, 255, 255, 0.15); /* Nền trong suốt nhẹ */
+            background-color: rgba(255, 255, 255, 0.15);
             padding: 5px 10px;
             border-radius: 8px;
             border: 1px solid rgba(255,255,255,0.3);
+            cursor: pointer; /* Cho biết có thể click/hover */
+            transition: background-color 0.3s ease;
+            position: relative;
+            z-index: 101; /* Đảm bảo nút QR luôn ở trên header */
         }
 
         .qr-img {
-            width: 60px; /* Kích thước ảnh QR */
+            width: 60px; /* Kích thước ảnh QR ban đầu */
             height: 60px;
-            object-fit: cover;
+            object-fit: contain; /* Đổi từ cover sang contain để ảnh không bị cắt */
             border-radius: 4px;
-            background-color: #fff; /* Nền trắng để QR dễ quét */
+            background-color: #fff;
             display: block;
+            transition: transform 0.3s ease-in-out;
         }
 
         .qr-text {
@@ -79,6 +86,82 @@
             color: #fff;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            transition: opacity 0.3s ease;
+        }
+
+        /* Overlay khi QR phóng to */
+        .qr-overlay {
+            display: none; /* Ban đầu ẩn */
+            position: fixed; /* Cố định trên màn hình */
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8); /* Lớp phủ đen mờ */
+            z-index: 9999; /* Đảm bảo nằm trên mọi thứ */
+            justify-content: center;
+            align-items: center;
+            flex-direction: column; /* Để ảnh và text nằm dọc */
+            opacity: 0; /* Bắt đầu với độ mờ */
+            transition: opacity 0.3s ease;
+            cursor: pointer; /* Cho phép click để đóng */
+        }
+
+        .qr-overlay.active {
+            display: flex; /* Hiển thị khi active */
+            opacity: 1; /* Hiển thị đầy đủ */
+        }
+
+        .qr-overlay-content {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            animation: fadeInScale 0.3s ease-out forwards; /* Hiệu ứng mở ra */
+            position: relative; /* Cho phép đặt nút đóng */
+        }
+
+        .qr-overlay-img {
+            width: 250px; /* Kích thước lớn hơn cho ảnh QR trên overlay */
+            height: 250px;
+            object-fit: contain;
+            display: block;
+            margin: 0 auto 15px auto; /* Căn giữa và tạo khoảng cách */
+            border: 1px solid #eee;
+            border-radius: 4px;
+        }
+
+        .qr-overlay-text {
+            font-size: 1.2em;
+            color: var(--text-dark);
+            font-weight: 600;
+            margin-top: 10px;
+        }
+        
+        .qr-overlay-close {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 2em;
+            color: #555;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+
+        .qr-overlay-close:hover {
+            color: #000;
+        }
+
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
         }
         /* -------------------------------- */
 
@@ -91,6 +174,7 @@
             display: flex;
             gap: 10px;
             flex-wrap: wrap;
+            z-index: 99; /* Đảm bảo tab bar ở trên các nội dung khác */
         }
 
         .tab-button {
@@ -122,6 +206,7 @@
             flex-grow: 1;
             overflow: hidden;
             position: relative;
+            z-index: 1; /* Đảm bảo content ở dưới overlay */
         }
 
         .tab-content {
@@ -177,7 +262,7 @@
         </svg>
         <h1>Dashboard Quản lý - by NH.Dương-32859</h1>
         
-        <div class="qr-container">
+        <div class="qr-container" id="qrContainer">
             <img src="qr.png" alt="QR VietinBank" class="qr-img">
             <span class="qr-text">Thấy hay thì mời Dương cốc Cà Phê^^!</span>
         </div>
@@ -188,8 +273,9 @@
         <button class="tab-button" onclick="openTab(event, 'Lkst')">🧑‍💻 BI Lũy Kế</button>
         <button class="tab-button" onclick="openTab(event, 'biNhanVien')">🧑‍💻 BI Nhân viên</button>
         <button class="tab-button" onclick="openTab(event, 'baoCaoYCX')">📈 Báo cáo YCX</button>
-        <button class="tab-button" onclick="openTab(event, 'tonlap')">🗓️ Tồn Laptop</button>
-        <button class="tab-button" onclick="openTab(event, 'popuploc')">🗓️ In popup lõi MLN</button>    
+        <button class="tab-button" onclick="openTab(event, 'tonlap')">📦 Tồn Laptop</button>
+        <button class="tab-button" onclick="openTab(event, 'popuploc')">🖨️ In popup lõi MLN</button>    
+        <button class="tab-button" onclick="openTab(event, 'banhang')">✍️ Nhật ký BH</button>  
     </div>
 
     <main class="content-area">
@@ -213,7 +299,18 @@
         <div id="popuploc" class="tab-content">
             <iframe class="content-iframe" src="./popuploc.html"></iframe>
         </div>    
+        <div id="banhang" class="tab-content">
+            <iframe class="content-iframe" src="./banhang.html"></iframe>
+        </div>  
     </main>
+
+    <div class="qr-overlay" id="qrOverlay">
+        <div class="qr-overlay-content">
+            <span class="qr-overlay-close" onclick="hideQrOverlay()">&times;</span>
+            <img src="qr.png" alt="QR VietinBank" class="qr-overlay-img">
+            <span class="qr-overlay-text">Thấy hay thì mời Dương cốc Cà Phê^^!</span>
+        </div>
+    </div>
 
     <script>
         function openTab(evt, tabName) {
@@ -232,8 +329,35 @@
             document.getElementById(tabName).classList.add("active");
             evt.currentTarget.classList.add("active");
         }
+
+        // JavaScript cho hiệu ứng phóng to QR
+        const qrContainer = document.getElementById('qrContainer');
+        const qrOverlay = document.getElementById('qrOverlay');
+
+        // Hàm hiển thị overlay
+        qrContainer.addEventListener('mouseenter', () => {
+            qrOverlay.classList.add('active');
+            document.body.style.overflow = 'hidden'; // Ngăn cuộn trang
+        });
+
+        // Hàm ẩn overlay (khi click vào overlay hoặc nút đóng)
+        function hideQrOverlay() {
+            qrOverlay.classList.remove('active');
+            document.body.style.overflow = ''; // Cho phép cuộn trang lại
+        }
+
+        // Thêm event listener cho overlay để khi click ra ngoài nội dung thì đóng
+        qrOverlay.addEventListener('click', (event) => {
+            if (event.target === qrOverlay) { // Chỉ khi click trực tiếp vào lớp phủ
+                hideQrOverlay();
+            }
+        });
+
+        // Ngăn sự kiện click từ nội dung overlay lan ra lớp phủ
+        document.querySelector('.qr-overlay-content').addEventListener('click', (event) => {
+            event.stopPropagation();
+        });
     </script>
 
 </body>
 </html>
-
