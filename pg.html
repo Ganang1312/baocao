@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lịch Làm Việc Team PG - ĐMX Savico (Nâng cấp)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8;
+        }
+        .card {
+            background-color: white;
+            border-radius: 1rem;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 8px 12px rgba(0,0,0,0.07), 0 15px 30px rgba(0,0,0,0.07);
+        }
+        .table-container {
+            max-width: 100%;
+            overflow-x: auto; /* Cho phép cuộn ngang nếu thực sự cần thiết trên màn hình rất nhỏ */
+        }
+        table {
+            border-collapse: collapse;
+            table-layout: auto; 
+            width: 100%;
+            font-size: 13px; 
+        }
+        th, td {
+            padding: 8px 3px; 
+            border: 1px solid #e5e7eb;
+            vertical-align: middle;
+            word-wrap: break-word;
+            text-align: center;
+        }
+        thead th {
+            position: sticky;
+            top: 0;
+            background: linear-gradient(135deg, #0ea5e9, #2563eb);
+            color: white;
+            z-index: 10;
+            font-weight: 600;
+            font-size: 12px; 
+            white-space: normal; 
+        }
+        tfoot td {
+            font-weight: 600;
+            background-color: #f8fafc;
+        }
+        th.weekend-header {
+            background: linear-gradient(135deg, #f97316, #ea580c);
+        }
+        td.weekend-cell {
+            background-color: #fff7ed;
+        }
+        tbody tr:hover td {
+            background-color: #e0f2fe;
+        }
+        
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 3px 6px; 
+            border-radius: 9999px;
+            font-weight: 500;
+            font-size: 11px; 
+            white-space: nowrap;
+        }
+        .shift-sang { background-color: #bae6fd; color: #0c4a6e; border: 1px solid #7dd3fc; }
+        .shift-chieu { background-color: #ffedd5; color: #c2410c; border: 1px solid #fed7aa; }
+        .shift-off { background-color: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+        .shift-hop { background-color: #e0e7ff; color: #3730a3; border: 1px solid #c7d2fe; }
+        .shift-gay { background-color: #fecaca; color: #991b1b; border: 1px solid #f87171; }
+        .shift-khac { background-color: #f3f4f6; color: #4b5563; border: 1px solid #d1d5db; }
+        
+        .icon {
+            width: 1.125rem;
+            height: 1.125rem;
+            margin-right: 0.5rem;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .hidden-col {
+            display: none;
+        }
+
+        .col-stt { min-width: 30px; }
+        .col-nganhhang, .col-hang { min-width: 90px; }
+        .col-tenpg { min-width: 90px; font-weight: 600; }
+        .col-gt { min-width: 35px; }
+        .col-vesinh { min-width: 80px; }
+        .col-sdt { min-width: 90px; }
+        .col-schedule { min-width: 85px; } 
+        .col-note { min-width: 100px; }
+        .col-diachi { min-width: 120px; }
+
+    </style>
+</head>
+<body class="p-2 sm:p-4 md:p-8">
+
+    <div id="capture-area" class="max-w-screen-xl mx-auto space-y-8">
+        <header class="text-center relative">
+            <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-500 to-blue-600 break-words px-4">LỊCH LÀM VIỆC TEAM PG</h1>
+            <p id="week-title" class="text-base md:text-lg text-gray-600 mt-2">ĐMX SAVICO</p>
+            <button id="screenshot-btn" class="print-hide absolute top-0 right-0 bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700 transition-transform transform hover:scale-105 shadow-lg flex items-center">
+                <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" /><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z" /></svg>
+                Chụp Ảnh
+            </button>
+        </header>
+
+        <div id="data-input-card" class="card p-4 md:p-6 print-hide">
+             <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                <svg class="icon text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m.75 12l3 3m0 0l3-3m-3 3v-6m-1.5-9H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>
+                Nhập & Xuất Dữ Liệu
+            </h2>
+            <p class="text-gray-600 mb-4">Dán dữ liệu từ file Excel vào đây. Dữ liệu sẽ được tự động lưu lại trên trình duyệt.</p>
+            <textarea id="data-input" rows="6" class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" placeholder="Dán dữ liệu vào đây..."></textarea>
+            <div class="mt-4 flex flex-col md:flex-row gap-4">
+                <button id="update-btn" class="w-full md:w-auto bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition-transform transform hover:scale-105 shadow-lg flex-grow">Cập Nhật Lịch</button>
+                <button id="export-json-btn" class="w-full md:w-auto bg-green-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-700 transition-transform transform hover:scale-105 shadow-lg flex-grow">Xuất ra pg.json</button>
+            </div>
+        </div>
+
+        <div class="card p-4 md:p-6">
+             <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                <svg class="icon text-green-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" /></svg>
+                Lịch Làm Việc PG
+            </h2>
+            <div class="flex flex-col md:flex-row gap-4 my-4 print-hide">
+                <input type="text" id="search-pg" placeholder="Tìm theo tên PG, hãng..." class="flex-grow w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                <select id="filter-category" class="w-full md:w-auto p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                    <option value="all">Tất cả ngành hàng</option>
+                </select>
+            </div>
+            
+            <div id="column-toggles" class="flex flex-wrap gap-x-4 gap-y-2 mb-4 print-hide">
+                 <!-- Toggles will be inserted here by JS -->
+            </div>
+
+            <div class="table-container rounded-lg">
+                <table class="w-full text-sm text-left text-gray-700">
+                    <thead id="schedule-head" class="text-xs uppercase"></thead>
+                    <tbody id="schedule-body"></tbody>
+                    <tfoot id="schedule-foot"></tfoot>
+                </table>
+                <div id="no-results" class="hidden text-center p-8 text-gray-500">
+                    <p>Không tìm thấy kết quả phù hợp.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div id="summary-card" class="card p-4 md:p-6 print-hide">
+            <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                <svg class="icon text-purple-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" /></svg>
+                Phân Tích & Nhận Xét Hôm Nay
+            </h2>
+            <div class="mb-4">
+                <label for="summary-date" class="font-semibold text-gray-700">Chọn ngày để xem:</label>
+                <input type="date" id="summary-date" class="mt-1 block w-full md:w-auto p-2 border border-gray-300 rounded-lg shadow-sm">
+            </div>
+            <div id="daily-summary" class="space-y-4 text-gray-700">
+                <!-- Nội dung sẽ được render bằng JS -->
+            </div>
+        </div>
+
+        <!-- MỚI: Khung xuất báo cáo tuần -->
+        <div id="export-card" class="card p-4 md:p-6 print-hide">
+            <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                <svg class="icon text-teal-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
+                Xuất Báo Cáo Tuần
+            </h2>
+            <p class="text-gray-600 mb-4">Xuất nhận xét và lịch làm việc của cả tuần ra tệp Excel, định dạng theo mẫu để gửi báo cáo.</p>
+            <button id="export-weekly-excel-btn" class="w-full md:w-auto bg-teal-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-teal-700 transition-transform transform hover:scale-105 shadow-lg flex items-center justify-center">
+                <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75l3 3m0 0l3-3m-3 3v-7.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                Xuất File Excel
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Dữ liệu mặc định nếu không có gì trong localStorage hoặc pg.json
+        const initialData = [
+            { stt: 1, nganhHang: 'ĐIỆN TỬ', hang: 'SONY', ten: 'YẾN', sdt: '362282223', gt: 'Nữ', veSinh: 'Thứ 3', lich: ['CHIỀU', 'SÁNG', 'OFF', 'HỌP', 'CHIỀU', 'SÁNG', 'CHIỀU'], note: '', diaChi: '447 Lạc Long Quân, Tây Hồ, HN' },
+            { stt: 2, nganhHang: 'ĐIỆN TỬ', hang: 'SAMSUNG', ten: 'THẢO', sdt: '0338096094', gt: 'Nữ', veSinh: 'Thứ 2', lich: ['SÁNG', 'CHIỀU', 'SÁNG', 'OFF', 'CHIỀU', 'CHIỀU', 'SÁNG'], note: '', diaChi: 'Vĩnh Hưng , Hoàng Mai .HN' },
+            { stt: 3, nganhHang: 'ĐIỆN LẠNH', hang: 'LG', ten: 'HÀ', sdt: '0904808424', gt: 'Nam', veSinh: 'Thứ 5', lich: ['HỌP', 'OFF', 'SÁNG', 'SÁNG', 'SÁNG', 'SÁNG', 'SÁNG'], note: '', diaChi: '390 Nguyễn Văn Cừ' },
+            { stt: 4, nganhHang: 'GIA DỤNG', hang: 'PANASONIC', ten: 'THỦY', sdt: '0987654321', gt: 'Nữ', veSinh: 'Thứ 4', lich: ['SÁNG', 'OFF', 'CHIỀU', 'SÁNG', 'ST KHÁC', 'SÁNG', 'CHIỀU'], note: 'Test', diaChi: 'Hà Nội' },
+            { stt: 5, nganhHang: 'GIA DỤNG', hang: 'SUNHOUSE', ten: 'LINH', sdt: '0123456789', gt: 'Nữ', veSinh: 'Thứ 6', lich: ['CA GÃY (23-5)', 'SÁNG', 'CHIỀU', 'OFF', 'SÁNG', 'CHIỀU', 'SÁNG'], note: 'Ca gãy mẫu', diaChi: 'Cầu Giấy' },
+        ];
+        
+        // Biến toàn cục
+        let scheduleData = [];
+        let weekDates = [];
+
+        // Lấy các element từ DOM
+        const scheduleHead = document.getElementById('schedule-head');
+        const scheduleBody = document.getElementById('schedule-body');
+        const scheduleFoot = document.getElementById('schedule-foot');
+        const searchInput = document.getElementById('search-pg');
+        const categoryFilter = document.getElementById('filter-category');
+        const noResultsDiv = document.getElementById('no-results');
+        const dataInput = document.getElementById('data-input');
+        const updateBtn = document.getElementById('update-btn');
+        const exportJsonBtn = document.getElementById('export-json-btn');
+        const dailySummaryDiv = document.getElementById('daily-summary');
+        const summaryDateInput = document.getElementById('summary-date');
+        const weekTitle = document.getElementById('week-title');
+        const screenshotBtn = document.getElementById('screenshot-btn');
+        const columnTogglesContainer = document.getElementById('column-toggles');
+        const exportWeeklyExcelBtn = document.getElementById('export-weekly-excel-btn'); // MỚI
+
+        // Icons
+        const sunIcon = `<svg class="icon text-yellow-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" /></svg>`;
+        const moonIcon = `<svg class="icon text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" /></svg>`;
+        const warningIcon = `<svg class="icon text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.007H12v-.007z" /></svg>`;
+        const pillSunIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm-.707 9.193a1 1 0 010-1.414l.707-.707a1 1 0 111.414 1.414l-.707.707a1 1 0 01-1.414 0zm12.728 0l-.707-.707a1 1 0 111.414-1.414l.707.707a1 1 0 01-1.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 100 2h1z" clip-rule="evenodd" /></svg>`;
+        const pillMoonIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1" viewBox="0 0 20 20" fill="currentColor"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" /></svg>`;
+        const pillOffIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" /></svg>`;
+        const pillHopIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1" viewBox="0 0 20 20" fill="currentColor"><path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zm-3 2a2 2 0 100-4 2 2 0 000 4zm7 1a1 1 0 011-1h3a1 1 0 110 2h-3a1 1 0 01-1-1zm-2-5a3 3 0 11-6 0 3 3 0 016 0zm-3 2a2 2 0 100-4 2 2 0 000 4z" /><path fill-rule="evenodd" d="M19 14a1 1 0 01-1 1H2a1 1 0 01-1-1v-1a3 3 0 013-3h12a3 3 0 013 3v1zm-3-1a1 1 0 00-1-1H5a1 1 0 00-1 1v1h12v-1z" clip-rule="evenodd" /></svg>`;
+        const pillGayIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.21 3.03-1.742 3.03H4.42c-1.532 0-2.492-1.696-1.742-3.03l5.58-9.92zM10 13a1 1 0 110-2 1 1 0 010 2zm-1-4a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z" clip-rule="evenodd" /></svg>`;
+        const pillKhacIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1" viewBox="0 0 20 20" fill="currentColor"><path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z" /></svg>`;
+
+        // Cấu hình
+        const categoryColorMap = new Map();
+        const colorPalette = [
+            'bg-red-100', 'bg-sky-100', 'bg-green-100', 'bg-yellow-100', 
+            'bg-purple-100', 'bg-pink-100', 'bg-orange-100', 'bg-teal-100',
+            'bg-lime-100', 'bg-fuchsia-100', 'bg-cyan-100', 'bg-gray-200'
+        ];
+        const toggleableColumns = {
+            'col-vesinh': 'Lịch Vệ Sinh',
+            'col-sdt': 'SĐT',
+            'col-note': 'Note',
+            'col-diachi': 'Địa Chỉ'
+        };
+        
+        // --- CÁC HÀM TIỆN ÍCH ---
+
+        function assignCategoryColors(data) {
+            categoryColorMap.clear();
+            const categories = [...new Set(data.map(pg => pg.nganhHang))];
+            categories.sort().forEach((category, index) => {
+                categoryColorMap.set(category, colorPalette[index % colorPalette.length]);
+            });
+        }
+
+        function isCaGay(shift) {
+            const s = (shift || '').toUpperCase();
+            return s.includes('GÃY') || s.includes('23-5') || s.includes('2-456');
+        }
+
+        function getShiftClass(shift) {
+            const s = (shift || '').toUpperCase();
+            if (s.includes('SÁNG')) return 'shift-sang';
+            if (s.includes('CHIỀU')) return 'shift-chieu';
+            if (isCaGay(shift)) return 'shift-gay';
+            if (s.includes('OFF') || s.includes('NGHỈ')) return 'shift-off';
+            if (s.includes('HỌP')) return 'shift-hop';
+            return 'shift-khac';
+        }
+        
+        function getShiftIcon(shift) {
+            const s = (shift || '').toUpperCase();
+            if (s.includes('SÁNG')) return pillSunIcon;
+            if (s.includes('CHIỀU')) return pillMoonIcon;
+            if (isCaGay(shift)) return pillGayIcon;
+            if (s.includes('OFF') || s.includes('NGHỈ')) return pillOffIcon;
+            if (s.includes('HỌP')) return pillHopIcon;
+            return pillKhacIcon;
+        }
+
+        function getCleanShiftText(shift) {
+            const originalShift = (shift || '').trim();
+            const s = originalShift.toUpperCase();
+            if (isCaGay(originalShift)) return originalShift;
+            if (s.includes('SÁNG')) return 'Sáng';
+            if (s.includes('CHIỀU')) return 'Chiều';
+            if (s.includes('OFF') || s.includes('NGHỈ')) return 'Off';
+            if (s.includes('HỌP')) return 'Họp';
+            if (s.includes('KHÁC')) return 'Khác';
+            if (s === 'S') return 'Sáng';
+            if (s === 'C') return 'Chiều';
+            return originalShift;
+        }
+
+        // --- CÁC HÀM RENDER GIAO DIỆN ---
+
+        function renderTable(data) {
+            scheduleBody.innerHTML = '';
+            noResultsDiv.classList.toggle('hidden', data.length > 0);
+            data.forEach(pg => {
+                const row = document.createElement('tr');
+                const bgColorClass = categoryColorMap.get(pg.nganhHang) || 'bg-gray-200';
+
+                row.innerHTML = `
+                    <td class="font-medium text-gray-900 ${bgColorClass} col-stt">${pg.stt}</td>
+                    <td class="${bgColorClass} col-nganhhang">${pg.nganhHang}</td>
+                    <td class="${bgColorClass} col-hang">${pg.hang}</td>
+                    <td class="text-gray-900 ${bgColorClass} col-tenpg">${pg.ten}</td>
+                    <td class="${pg.gt.toLowerCase() === 'nam' ? 'text-blue-600' : 'text-pink-600'} col-gt">${pg.gt}</td>
+                    <td class="col-vesinh">${pg.veSinh || ''}</td>
+                    <td class="col-sdt">${pg.sdt || ''}</td>
+                    ${pg.lich.map((shift, index) => {
+                        const displayShift = getCleanShiftText(shift);
+                        return `<td class="text-center ${index >= 5 ? 'weekend-cell' : ''} col-schedule"><span class="pill ${getShiftClass(shift)}">${getShiftIcon(shift)} ${displayShift}</span></td>`
+                    }).join('')}
+                    <td class="col-note">${pg.note || ''}</td>
+                    <td class="col-diachi">${pg.diaChi || ''}</td>
+                `;
+                scheduleBody.appendChild(row);
+            });
+            updateColumnVisibility();
+        }
+
+        function renderHeaderAndStats(data) {
+            const days = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ Nhật'];
+            const stats = days.map(() => ({ 
+                sang: { total: 0, nam: 0, nu: 0 }, 
+                chieu: { total: 0, nam: 0, nu: 0 },
+                gay: { total: 0, nam: 0, nu: 0 } 
+            }));
+
+            data.forEach(pg => {
+                pg.lich.forEach((shift, dayIndex) => {
+                    const s = (shift || '').toUpperCase();
+                    const isNam = pg.gt.toLowerCase() === 'nam';
+                    if (s.includes('SÁNG')) {
+                        stats[dayIndex].sang.total++;
+                        if (isNam) stats[dayIndex].sang.nam++; else stats[dayIndex].sang.nu++;
+                    } else if (s.includes('CHIỀU')) {
+                        stats[dayIndex].chieu.total++;
+                        if (isNam) stats[dayIndex].chieu.nam++; else stats[dayIndex].chieu.nu++;
+                    } else if (isCaGay(shift)) {
+                        stats[dayIndex].gay.total++;
+                        if (isNam) stats[dayIndex].gay.nam++; else stats[dayIndex].gay.nu++;
+                    }
+                });
+            });
+            
+            scheduleHead.innerHTML = `<tr>
+                <th class="col-stt">STT</th>
+                <th class="col-nganhhang">Ngành Hàng</th>
+                <th class="col-hang">Hãng</th>
+                <th class="col-tenpg">Tên PG</th>
+                <th class="col-gt">GT</th>
+                <th class="col-vesinh">Lịch Vệ Sinh</th>
+                <th class="col-sdt">SĐT</th>
+                ${days.map((day, index) => `<th class="col-schedule ${index >= 5 ? 'weekend-header' : ''}">${day}<br><span class="text-xs font-normal">${weekDates[index] ? weekDates[index].toLocaleDateString('vi-VN', {day: '2-digit', month: '2-digit'}) : ''}</span></th>`).join('')}
+                <th class="col-note">Note</th>
+                <th class="col-diachi">Địa Chỉ</th>
+            </tr>`;
+
+            const createStatRow = (title, icon, shiftKey, statsData) => `
+                <td colspan="5"><div class="font-bold flex items-center justify-center">${icon} ${title}</div></td>
+                <td class="col-vesinh"></td><td class="col-sdt"></td>
+                ${statsData.map((day, index) => `<td class="text-center ${index >= 5 ? 'weekend-cell' : ''} col-schedule">${day[shiftKey].total} <span class="text-xs font-normal">(${day[shiftKey].nam}N/${day[shiftKey].nu}G)</span></td>`).join('')}
+                <td class="col-note"></td><td class="col-diachi"></td>
+            `;
+
+            scheduleFoot.innerHTML = `
+                <tr>${createStatRow('SÁNG', sunIcon, 'sang', stats)}</tr>
+                <tr>${createStatRow('CHIỀU', moonIcon, 'chieu', stats)}</tr>
+                <tr>${createStatRow('CA GÃY', warningIcon, 'gay', stats)}</tr>
+            `;
+            updateColumnVisibility();
+        }
+        
+        function renderDailySummary(dateStr, data) {
+            const selectedDate = new Date(dateStr + 'T00:00:00');
+            if (isNaN(selectedDate)) {
+                dailySummaryDiv.innerHTML = '<p class="text-red-500">Vui lòng chọn một ngày hợp lệ.</p>';
+                return;
+            }
+            let dayIndex = selectedDate.getDay() - 1;
+            if (dayIndex < 0) dayIndex = 6;
+
+            const workingSang = data.filter(pg => (pg.lich[dayIndex] || '').toUpperCase().includes('SÁNG'));
+            const workingChieu = data.filter(pg => (pg.lich[dayIndex] || '').toUpperCase().includes('CHIỀU'));
+            const workingGay = data.filter(pg => isCaGay(pg.lich[dayIndex]));
+            const cleaningDuty = data.filter(pg => (pg.veSinh || '').toLowerCase() === ['thứ 2', 'thứ 3', 'thứ 4', 'thứ 5', 'thứ 6', 'thứ 7', 'chủ nhật'][dayIndex]);
+            
+            const createEmployeeList = (pgList) => {
+                if (pgList.length === 0) return '<p class="text-sm text-gray-500">Không có.</p>';
+                return '<ul class="space-y-1">' + pgList.map(pg => 
+                    `<li class="text-sm"><strong>${pg.ten}</strong> - <span class="text-xs text-gray-600">${pg.hang}</span></li>`
+                ).join('') + '</ul>';
+            };
+
+            dailySummaryDiv.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-blue-50 border border-blue-200 p-4 rounded-lg">
+                        <h3 class="font-bold text-lg text-blue-800 mb-2">Ca Sáng (${workingSang.length})</h3>
+                        ${createEmployeeList(workingSang)}
+                    </div>
+                    <div class="bg-orange-50 border border-orange-200 p-4 rounded-lg">
+                        <h3 class="font-bold text-lg text-orange-800 mb-2">Ca Chiều (${workingChieu.length})</h3>
+                        ${createEmployeeList(workingChieu)}
+                    </div>
+                    <div class="bg-red-50 border border-red-200 p-4 rounded-lg">
+                        <h3 class="font-bold text-lg text-red-800 mb-2">Ca Gãy (${workingGay.length})</h3>
+                        ${createEmployeeList(workingGay)}
+                    </div>
+                    <div class="bg-green-50 border border-green-200 p-4 rounded-lg">
+                        <h3 class="font-bold text-lg text-green-800 mb-2">Vệ Sinh Kho (${cleaningDuty.length})</h3>
+                        ${createEmployeeList(cleaningDuty)}
+                    </div>
+                </div>
+            `;
+        }
+        
+        function setupColumnToggles() {
+            let visibilitySettings = JSON.parse(localStorage.getItem('pgColumnVisibility'));
+            if (!visibilitySettings) {
+                visibilitySettings = { 'col-vesinh': true, 'col-sdt': false, 'col-note': false, 'col-diachi': false };
+                localStorage.setItem('pgColumnVisibility', JSON.stringify(visibilitySettings));
+            }
+            
+            columnTogglesContainer.innerHTML = '<h3 class="w-full font-semibold text-gray-700 md:w-auto">Ẩn/Hiện Cột:</h3>';
+            Object.keys(toggleableColumns).forEach(key => {
+                const label = toggleableColumns[key];
+                const isChecked = visibilitySettings[key];
+                const toggleHTML = `
+                    <label class="inline-flex items-center cursor-pointer">
+                        <input type="checkbox" data-col-class="${key}" class="form-checkbox h-5 w-5 text-blue-600 rounded" ${isChecked ? 'checked' : ''}>
+                        <span class="ml-2 text-gray-700">${label}</span>
+                    </label>`;
+                columnTogglesContainer.insertAdjacentHTML('beforeend', toggleHTML);
+            });
+
+            columnTogglesContainer.addEventListener('change', (e) => {
+                if (e.target.type === 'checkbox') {
+                    const colClass = e.target.dataset.colClass;
+                    let settings = JSON.parse(localStorage.getItem('pgColumnVisibility'));
+                    settings[colClass] = e.target.checked;
+                    localStorage.setItem('pgColumnVisibility', JSON.stringify(settings));
+                    updateColumnVisibility();
+                }
+            });
+        }
+
+        function updateColumnVisibility() {
+            const visibilitySettings = JSON.parse(localStorage.getItem('pgColumnVisibility'));
+            if (!visibilitySettings) return;
+            Object.keys(visibilitySettings).forEach(key => {
+                const shouldBeVisible = visibilitySettings[key];
+                const cells = document.querySelectorAll(`.${key}`);
+                cells.forEach(cell => cell.classList.toggle('hidden-col', !shouldBeVisible));
+            });
+        }
+
+        function populateCategoryFilter() {
+            const categories = [...new Set(scheduleData.map(pg => pg.nganhHang))];
+            categoryFilter.innerHTML = '<option value="all">Tất cả ngành hàng</option>';
+            categories.sort().forEach(category => {
+                const option = document.createElement('option');
+                option.value = category;
+                option.textContent = category;
+                categoryFilter.appendChild(option);
+            });
+        }
+
+        function filterAndRender() {
+            const searchTerm = searchInput.value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            const selectedCategory = categoryFilter.value;
+
+            const filteredData = scheduleData.filter(pg => {
+                const matchesSearch = searchTerm === '' ||
+                    pg.ten.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(searchTerm) ||
+                    pg.hang.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(searchTerm);
+                const matchesCategory = selectedCategory === 'all' || pg.nganhHang === selectedCategory;
+                return matchesSearch && matchesCategory;
+            });
+
+            renderTable(filteredData);
+            renderHeaderAndStats(filteredData);
+            if (summaryDateInput.value) {
+                renderDailySummary(summaryDateInput.value, filteredData);
+            }
+        }
+
+        function parseInputData(text) {
+            const rows = text.trim().split('\n');
+            const newData = { meta: {}, pgs: [] };
+            let currentNganhHang = '';
+            let dateRowFound = false;
+
+            rows.forEach(row => {
+                const cols = row.split('\t').map(c => c.trim());
+                try {
+                    if (cols.length > 7 && cols.slice(7, 14).some(c => /\d{1,2}[\/-]\d{1,2}/.test(c)) && !dateRowFound) {
+                        newData.meta.dates = cols.slice(7, 14);
+                        dateRowFound = true;
+                    } else if (cols.length >= 14 && /^\d+$/.test(cols[0])) {
+                        if (cols[1]) currentNganhHang = cols[1];
+                        const pg = {
+                            stt: parseInt(cols[0], 10),
+                            nganhHang: currentNganhHang,
+                            hang: cols[2] || '',
+                            ten: cols[3] || '',
+                            sdt: cols[4] || '',
+                            gt: (cols[5] || '').toUpperCase() === 'G' ? 'Nữ' : 'Nam',
+                            veSinh: cols[6] || '',
+                            lich: cols.slice(7, 14),
+                            note: cols[14] || '',
+                            diaChi: cols[15] || ''
+                        };
+                        newData.pgs.push(pg);
+                    }
+                } catch (e) {
+                    console.error("Lỗi khi xử lý dòng:", row, e);
+                }
+            });
+            return newData;
+        }
+
+        // MỚI: Hàm xuất báo cáo tuần ra Excel
+        function exportWeeklySummaryToExcel() {
+            if (!scheduleData || scheduleData.length === 0) {
+                alert("Không có dữ liệu lịch làm việc để xuất.");
+                return;
+            }
+
+            const daysOfWeek = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ Nhật'];
+            let reportData = [['day_of_week', 'pg_schedule']]; // Dòng tiêu đề cho file Excel
+
+            daysOfWeek.forEach((dayName, dayIndex) => {
+                const workingSang = scheduleData.filter(pg => (pg.lich[dayIndex] || '').toUpperCase().includes('SÁNG'));
+                const workingChieu = scheduleData.filter(pg => (pg.lich[dayIndex] || '').toUpperCase().includes('CHIỀU'));
+                const cleaningDuty = scheduleData.filter(pg => (pg.veSinh || '').toLowerCase() === dayName.toLowerCase());
+
+                let dailySections = [];
+
+                const buildSectionString = (title, pgList) => {
+                    if (pgList.length > 0) {
+                        const pgLabels = pgList.map(pg => `${pg.ten.toUpperCase()} - ${pg.hang.toUpperCase()}`).join('\n');
+                        return `${title} (${pgList.length})\n${pgLabels}`;
+                    }
+                    return null;
+                };
+
+                const sangSection = buildSectionString('Ca Sáng', workingSang);
+                if (sangSection) dailySections.push(sangSection);
+
+                const chieuSection = buildSectionString('Ca Chiều', workingChieu);
+                if (chieuSection) dailySections.push(chieuSection);
+                
+                const veSinhSection = buildSectionString('Vệ Sinh Kho', cleaningDuty);
+                if (veSinhSection) dailySections.push(veSinhSection);
+
+                if (dailySections.length > 0) {
+                    const finalCellContent = dailySections.join('\n\n');
+                    reportData.push([dayName, finalCellContent]);
+                }
+            });
+            
+            if (reportData.length <= 1) {
+                alert("Không có hoạt động nào được ghi nhận trong tuần để xuất báo cáo.");
+                return;
+            }
+            
+            const ws = XLSX.utils.aoa_to_sheet(reportData);
+            
+            ws['!cols'] = [ { wch: 15 }, { wch: 40 } ];
+
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "BaoCaoTuan");
+
+            const firstDay = weekDates[0] ? weekDates[0].toLocaleDateString('vi-VN', {day: '2-digit', month: '2-digit'}).replace(/\//g, '-') : 'tuan';
+            XLSX.writeFile(wb, `Bao_cao_tuan_PG_${firstDay}.xlsx`);
+            
+            alert('Đã bắt đầu tạo và tải xuống tệp Excel báo cáo tuần!');
+        }
+        
+        // --- HÀM KHỞI TẠO CHÍNH ---
+
+        function initializePage(data) {
+            scheduleData = data.pgs || [];
+            assignCategoryColors(scheduleData);
+            
+            let processedDates = [];
+            if (data.meta && data.meta.dates && Array.isArray(data.meta.dates)) {
+                const year = new Date().getFullYear();
+                processedDates = data.meta.dates.map(d => {
+                    if (typeof d !== 'string') return null;
+                    const match = d.match(/(\d{1,2})[\/-](\d{1,2})/);
+                    if (match) {
+                        return new Date(`${year}-${match[2]}-${match[1]}`);
+                    }
+                    return null;
+                }).filter(d => d && !isNaN(d.getTime()));
+            }
+            
+            if (processedDates.length === 7) {
+                weekDates = processedDates;
+            } else {
+                 const today = new Date();
+                 const dayOfWeek = today.getDay();
+                 const monday = new Date(today);
+                 monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+                 weekDates = Array.from({length: 7}).map((_, i) => {
+                    const d = new Date(monday);
+                    d.setDate(monday.getDate() + i);
+                    return d;
+                 });
+            }
+            
+            const firstDay = weekDates[0].toLocaleDateString('vi-VN', {day: '2-digit', month: '2-digit'});
+            const lastDay = weekDates[6].toLocaleDateString('vi-VN', {day: '2-digit', month: '2-digit'});
+            weekTitle.textContent = `ĐMX SAVICO - Tuần từ ${firstDay} đến ${lastDay}`;
+            
+            const todayISO = new Date().toISOString().split('T')[0];
+            summaryDateInput.value = todayISO;
+
+            populateCategoryFilter();
+            filterAndRender();
+        }
+
+        // --- SỰ KIỆN VÀ KHỞI CHẠY ---
+
+        document.addEventListener('DOMContentLoaded', () => {
+            setupColumnToggles();
+            
+            updateBtn.addEventListener('click', () => {
+                const inputText = dataInput.value;
+                if (inputText.trim() === '') {
+                    alert("Vui lòng nhập dữ liệu vào ô.");
+                    return;
+                }
+                const newData = parseInputData(inputText);
+                if (newData.pgs.length > 0) {
+                    localStorage.setItem('pgScheduleData', JSON.stringify(newData));
+                    initializePage(newData);
+                    alert(`Đã cập nhật thành công ${newData.pgs.length} nhân viên!`);
+                } else {
+                    alert("Không thể xử lý dữ liệu. Vui lòng kiểm tra lại định dạng.");
+                }
+            });
+
+            exportJsonBtn.addEventListener('click', () => {
+                const dataString = localStorage.getItem('pgScheduleData');
+                if (!dataString) {
+                    alert('Không có dữ liệu để xuất. Vui lòng cập nhật dữ liệu trước.');
+                    return;
+                }
+                
+                const dataToSave = JSON.parse(dataString);
+                const jsonOutputString = JSON.stringify(dataToSave, null, 2);
+                const blob = new Blob([jsonOutputString], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'pg.json';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                alert('Đã bắt đầu tải xuống tệp pg.json!');
+            });
+
+            screenshotBtn.addEventListener('click', () => {
+                const elementsToHide = document.querySelectorAll('.print-hide');
+                elementsToHide.forEach(el => el.style.display = 'none');
+                html2canvas(document.getElementById('capture-area'), { scale: 1.5, useCORS: true, backgroundColor: '#f0f4f8' })
+                .then(canvas => {
+                    const link = document.createElement('a');
+                    link.download = `lich-lam-viec-${new Date().toISOString().slice(0,10)}.png`;
+                    link.href = canvas.toDataURL();
+                    link.click();
+                }).catch(err => {
+                    console.error("Lỗi chụp ảnh màn hình:", err);
+                }).finally(() => {
+                    elementsToHide.forEach(el => el.style.display = '');
+                });
+            });
+
+            // MỚI: Gán sự kiện cho nút xuất Excel
+            exportWeeklyExcelBtn.addEventListener('click', exportWeeklySummaryToExcel);
+            
+            // Các sự kiện lọc
+            searchInput.addEventListener('input', filterAndRender);
+            categoryFilter.addEventListener('change', filterAndRender);
+            summaryDateInput.addEventListener('change', filterAndRender);
+
+            // Logic tải dữ liệu khi mở trang
+            fetch('pg.json')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok or file not found');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("Tải dữ liệu thành công từ pg.json.");
+                    localStorage.setItem('pgScheduleData', JSON.stringify(data));
+                    initializePage(data);
+                })
+                .catch(error => {
+                    console.log("Không tìm thấy pg.json, đang thử tải từ bộ nhớ trình duyệt (localStorage)...");
+                    const savedData = localStorage.getItem('pgScheduleData');
+                    if (savedData) {
+                        console.log("Tải dữ liệu thành công từ localStorage.");
+                        initializePage(JSON.parse(savedData));
+                    } else {
+                        console.log("Không có dữ liệu trong localStorage, sử dụng dữ liệu ban đầu.");
+                        const initialFullData = { pgs: initialData, meta: { dates: [] } };
+                        initializePage(initialFullData);
+                    }
+                });
+        });
+    </script>
+
+</body>
+</html>
+
