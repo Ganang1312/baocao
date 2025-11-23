@@ -249,35 +249,58 @@
             to { opacity: 1; transform: scale(1); }
         }
 
-        /* --- Thanh Tabs điều hướng --- */
+        /* --- Thanh Tabs điều hướng (ĐÃ CẬP NHẬT GIAO DIỆN MỚI) --- */
         .tab-bar {
-            background-color: #fff;
-            padding: 0 20px;
-            border-bottom: 1px solid var(--border-color);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            background-color: var(--bg-color); 
+            padding: 15px 20px; 
+            border-bottom: none; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08); 
             display: flex;
-            gap: 10px;
+            gap: 15px; 
             flex-wrap: wrap;
             z-index: 99;
+            position: sticky; /* Giữ thanh tab cố định khi cuộn */
+            top: 0;
         }
 
         .tab-button {
-            padding: 12px 20px;
+            padding: 10px 22px; 
             cursor: pointer;
             border: none;
-            background-color: transparent;
-            font-size: 1em;
+            background-color: #fff; 
+            font-size: 0.95em;
             font-weight: 600;
             color: #555;
-            border-bottom: 3px solid transparent;
-            transition: all 0.3s ease;
+            border-radius: 25px; /* Hình viên thuốc hiện đại */
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* Transition mượt mà hơn */
             display: flex;
             align-items: center;
             gap: 8px;
+            /* Hiệu ứng Nổi khối 3D (Neumorphism nhẹ) */
+            box-shadow: 
+                3px 3px 6px rgba(189, 194, 201, 0.7), /* Shadow tối/dưới */
+                -3px -3px 6px rgba(255, 255, 255, 1); /* Shadow sáng/trên */
         }
 
-        .tab-button:hover { color: var(--dmx-blue); }
-        .tab-button.active { color: var(--dmx-blue); border-bottom-color: var(--dmx-blue); }
+        .tab-button:hover { 
+            color: var(--dmx-blue); 
+            /* Hiệu ứng Nổi khối khi hover: Nhấc nhẹ lên */
+            transform: translateY(-2px); 
+            box-shadow: 
+                5px 5px 10px rgba(189, 194, 201, 0.8), 
+                -5px -5px 10px rgba(255, 255, 255, 1.2);
+        }
+
+        .tab-button.active { 
+            color: var(--text-light); 
+            /* Hiệu ứng Bị Nhấn (Pressed) với Gradient và Shadow nhấn vào trong */
+            background: linear-gradient(45deg, var(--dmx-blue), #0066cc);
+            transform: translateY(0); 
+            box-shadow: 
+                inset 2px 2px 5px rgba(0, 0, 0, 0.2), 
+                inset -2px -2px 5px rgba(255, 255, 255, 0.1),
+                0 1px 3px rgba(0, 0, 0, 0.2); 
+        }
 
         /* --- Vùng chứa nội dung --- */
         .content-area {
@@ -325,8 +348,9 @@
             .header-left { justify-content: space-between; }
             .header-actions { flex-direction: column; align-items: stretch; }
             .backup-btn { margin-right: 0; justify-content: center; }
-            .tab-bar { padding: 5px; overflow-x: auto; flex-wrap: nowrap; }
-            .tab-button { padding: 10px 15px; white-space: nowrap; font-size: 0.9em; }
+            /* Cập nhật responsive cho thanh tab mới */
+            .tab-bar { padding: 10px; overflow-x: auto; flex-wrap: nowrap; }
+            .tab-button { padding: 8px 15px; white-space: nowrap; font-size: 0.9em; }
         }
     </style>
 </head>
