@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard Quản lý - Điện Máy Xanh Savico</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
             --dmx-blue: #0088ff;
@@ -13,6 +14,7 @@
             --border-color: #dee2e6;
             --text-dark: #333;
             --text-light: #fff;
+            --danger-color: #dc3545;
         }
 
         /* --- Cài đặt tổng thể --- */
@@ -31,13 +33,20 @@
         .main-header {
             background: linear-gradient(90deg, var(--dmx-blue) 0%, var(--dmx-green) 100%);
             color: var(--text-light);
-            padding: 10px 30px;
+            padding: 10px 20px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
             display: flex;
             align-items: center;
+            justify-content: space-between;
             gap: 15px;
-            position: relative; /* Quan trọng để z-index hoạt động */
-            z-index: 100; /* Đảm bảo header luôn ở trên */
+            position: relative;
+            z-index: 100;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
         }
 
         .main-header .store-icon {
@@ -48,13 +57,32 @@
 
         .main-header h1 {
             margin: 0;
-            font-size: 1.8em;
+            font-size: 1.6em;
             font-weight: 600;
         }
 
-        /* --- CSS CHO PHẦN MÃ QR (ĐÃ CHỈNH SỬA LẠI HOÀN TOÀN) --- */
+        /* --- Nút Backup Tổng --- */
+        .backup-btn {
+            background-color: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+            margin-right: 15px;
+        }
+        .backup-btn:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+            transform: translateY(-1px);
+        }
+
+        /* --- CSS CHO PHẦN MÃ QR (Đã khôi phục) --- */
         .qr-container {
-            margin-left: auto;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -63,53 +91,53 @@
             padding: 5px 10px;
             border-radius: 8px;
             border: 1px solid rgba(255,255,255,0.3);
-            cursor: pointer; /* Cho biết có thể click/hover */
+            cursor: pointer;
             transition: background-color 0.3s ease;
             position: relative;
-            z-index: 101; /* Đảm bảo nút QR luôn ở trên header */
+            z-index: 101;
+            min-width: 180px; /* Đảm bảo đủ rộng cho dòng text */
         }
 
         .qr-img {
-            width: 60px; /* Kích thước ảnh QR ban đầu */
+            width: 60px; /* Khôi phục kích thước cũ */
             height: 60px;
-            object-fit: contain; /* Đổi từ cover sang contain để ảnh không bị cắt */
+            object-fit: contain;
             border-radius: 4px;
             background-color: #fff;
             display: block;
-            transition: transform 0.3s ease-in-out;
         }
 
         .qr-text {
-            font-size: 11px;
+            font-size: 11px; /* Khôi phục font cũ */
             margin-top: 4px;
             font-weight: 500;
             color: #fff;
-            text-transform: uppercase;
+            text-transform: none; /* Bỏ in hoa toàn bộ */
             letter-spacing: 0.5px;
-            transition: opacity 0.3s ease;
+            text-align: center;
         }
 
-        /* Overlay khi QR phóng to */
+        /* Overlay QR */
         .qr-overlay {
-            display: none; /* Ban đầu ẩn */
-            position: fixed; /* Cố định trên màn hình */
+            display: none;
+            position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.8); /* Lớp phủ đen mờ */
-            z-index: 9999; /* Đảm bảo nằm trên mọi thứ */
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 9999;
             justify-content: center;
             align-items: center;
-            flex-direction: column; /* Để ảnh và text nằm dọc */
-            opacity: 0; /* Bắt đầu với độ mờ */
+            flex-direction: column;
+            opacity: 0;
             transition: opacity 0.3s ease;
-            cursor: pointer; /* Cho phép click để đóng */
+            cursor: pointer;
         }
 
         .qr-overlay.active {
-            display: flex; /* Hiển thị khi active */
-            opacity: 1; /* Hiển thị đầy đủ */
+            display: flex;
+            opacity: 1;
         }
 
         .qr-overlay-content {
@@ -118,27 +146,21 @@
             border-radius: 8px;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
             text-align: center;
-            animation: fadeInScale 0.3s ease-out forwards; /* Hiệu ứng mở ra */
-            position: relative; /* Cho phép đặt nút đóng */
+            animation: fadeInScale 0.3s ease-out forwards;
+            position: relative;
         }
 
         .qr-overlay-img {
-            width: 250px; /* Kích thước lớn hơn cho ảnh QR trên overlay */
+            width: 250px;
             height: 250px;
             object-fit: contain;
             display: block;
-            margin: 0 auto 15px auto; /* Căn giữa và tạo khoảng cách */
+            margin: 0 auto 15px auto;
             border: 1px solid #eee;
             border-radius: 4px;
         }
-
-        .qr-overlay-text {
-            font-size: 1.2em;
-            color: var(--text-dark);
-            font-weight: 600;
-            margin-top: 10px;
-        }
         
+        /* Nút đóng overlay */
         .qr-overlay-close {
             position: absolute;
             top: 10px;
@@ -148,22 +170,84 @@
             cursor: pointer;
             transition: color 0.2s ease;
         }
-
         .qr-overlay-close:hover {
             color: #000;
         }
 
-        @keyframes fadeInScale {
-            from {
-                opacity: 0;
-                transform: scale(0.8);
-            }
-            to {
-                opacity: 1;
-                transform: scale(1);
-            }
+        /* --- Backup Modal Styles --- */
+        .modal {
+            display: none; 
+            position: fixed; 
+            z-index: 2000; 
+            left: 0;
+            top: 0;
+            width: 100%; 
+            height: 100%; 
+            overflow: auto; 
+            background-color: rgba(0,0,0,0.5); 
+            backdrop-filter: blur(2px);
         }
-        /* -------------------------------- */
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto; 
+            padding: 25px;
+            border: 1px solid #888;
+            width: 90%; 
+            max-width: 700px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+
+        .close-modal {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close-modal:hover { color: #000; }
+
+        .backup-textarea {
+            width: 100%;
+            height: 200px;
+            margin: 15px 0;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            resize: vertical;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .action-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .btn-copy { background-color: #6c757d; color: white; }
+        .btn-restore { background-color: var(--dmx-green); color: white; }
+        .btn-clear { background-color: var(--danger-color); color: white; margin-right: auto; }
+        
+        .action-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+
+        @keyframes fadeInScale {
+            from { opacity: 0; transform: scale(0.8); }
+            to { opacity: 1; transform: scale(1); }
+        }
 
         /* --- Thanh Tabs điều hướng --- */
         .tab-bar {
@@ -174,15 +258,15 @@
             display: flex;
             gap: 10px;
             flex-wrap: wrap;
-            z-index: 99; /* Đảm bảo tab bar ở trên các nội dung khác */
+            z-index: 99;
         }
 
         .tab-button {
-            padding: 15px 25px;
+            padding: 12px 20px;
             cursor: pointer;
             border: none;
             background-color: transparent;
-            font-size: 1.1em;
+            font-size: 1em;
             font-weight: 600;
             color: #555;
             border-bottom: 3px solid transparent;
@@ -192,21 +276,16 @@
             gap: 8px;
         }
 
-        .tab-button:hover {
-            color: var(--dmx-blue);
-        }
-
-        .tab-button.active {
-            color: var(--dmx-blue);
-            border-bottom-color: var(--dmx-blue);
-        }
+        .tab-button:hover { color: var(--dmx-blue); }
+        .tab-button.active { color: var(--dmx-blue); border-bottom-color: var(--dmx-blue); }
 
         /* --- Vùng chứa nội dung --- */
         .content-area {
             flex-grow: 1;
             overflow: hidden;
             position: relative;
-            z-index: 1; /* Đảm bảo content ở dưới overlay */
+            z-index: 1;
+            background: #fff;
         }
 
         .tab-content {
@@ -218,78 +297,81 @@
             left: 0;
         }
 
-        .tab-content.active {
-            display: block;
-        }
-
-        /* --- iFrame để hiển thị file html con --- */
-        .content-iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
+        .tab-content.active { display: block; }
+        .content-iframe { width: 100%; height: 100%; border: none; }
         
-        .placeholder-wrapper {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100%;
-            flex-direction: column;
+        /* Toast Notification */
+        .toast {
+            visibility: hidden;
+            min-width: 250px;
+            background-color: #333;
+            color: #fff;
             text-align: center;
-            padding: 20px;
-            box-sizing: border-box;
-        }
-        .placeholder-text {
-            font-size: 1.5em;
-            color: #777;
-            max-width: 600px;
-        }
-        .placeholder-text code {
-            background-color: #e9ecef;
-            padding: 3px 6px;
             border-radius: 4px;
-            font-weight: bold;
-            color: #d63384;
+            padding: 16px;
+            position: fixed;
+            z-index: 3000;
+            left: 50%;
+            bottom: 30px;
+            transform: translateX(-50%);
+            font-size: 16px;
         }
+        .toast.show { visibility: visible; animation: fadein 0.5s, fadeout 0.5s 2.5s; }
+        @keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 30px; opacity: 1;} }
+        @keyframes fadeout { from {bottom: 30px; opacity: 1;} to {bottom: 0; opacity: 0;} }
 
+        @media (max-width: 900px) {
+            .main-header { flex-direction: column; align-items: stretch; gap: 10px; padding: 10px;}
+            .header-left { justify-content: space-between; }
+            .header-actions { flex-direction: column; align-items: stretch; }
+            .backup-btn { margin-right: 0; justify-content: center; }
+            .tab-bar { padding: 5px; overflow-x: auto; flex-wrap: nowrap; }
+            .tab-button { padding: 10px 15px; white-space: nowrap; font-size: 0.9em; }
+        }
     </style>
 </head>
 <body>
 
     <header class="main-header">
-        <svg class="store-icon" viewBox="0 0 24 24">
-            <path d="M12,3L2,12V21H22V12L12,3M19,19H17V12H7V19H5V10.19L12,5.69L19,10.19V19M12,14A2,2 0 0,1 14,16A2,2 0 0,1 12,18A2,2 0 0,1 10,16A2,2 0 0,1 12,14Z" />
-        </svg>
-        <h1>Dashboard Quản lý - by NH.Dương-32859</h1>
+        <div class="header-left">
+            <svg class="store-icon" viewBox="0 0 24 24">
+                <path d="M12,3L2,12V21H22V12L12,3M19,19H17V12H7V19H5V10.19L12,5.69L19,10.19V19M12,14A2,2 0 0,1 14,16A2,2 0 0,1 12,18A2,2 0 0,1 10,16A2,2 0 0,1 12,14Z" />
+            </svg>
+            <h1>🏆Dashboard Quản lý - NH.Dương 32859🏆</h1>
+        </div>
         
-        <div class="qr-container" id="qrContainer">
-            <img src="qr.png" alt="QR VietinBank" class="qr-img">
-            <span class="qr-text">Thấy hay thì mời Dương cốc Cà Phê^^!</span>
+        <div class="header-actions" style="display: flex; align-items: center; gap: 5px;">
+            <button class="backup-btn" onclick="openBackupModal()">
+                <i class="fas fa-database"></i> Backup/Restore Tổng
+            </button>
+
+            <div class="qr-container" id="qrContainer">
+                <img src="qr.png" alt="QR VietinBank" class="qr-img">
+                <span class="qr-text">💗Thấy hay thì mời Dương cốc Cà Phê!☕</span>
+            </div>
         </div>
     </header>
 
     <div class="tab-bar">
-        <button class="tab-button active" onclick="openTab(event, 'Rtst')">📊Realtime</button>
+        <button class="tab-button active" onclick="openTab(event, 'Rtst')">📊 Realtime</button>
         <button class="tab-button" onclick="openTab(event, 'Lkst')">🧑‍💻 BI Lũy Kế</button>
         <button class="tab-button" onclick="openTab(event, 'biNhanVien')">🧑‍💻 BI Nhân viên</button>
         <button class="tab-button" onclick="openTab(event, 'baoCaoYCX')">📈 Báo cáo YCX</button>
         <button class="tab-button" onclick="openTab(event, 'tonlap')">📦 Tồn Laptop</button>
-        <button class="tab-button" onclick="openTab(event, 'popuploc')">🖨️ In popup lõi MLN</button>    
+        <button class="tab-button" onclick="openTab(event, 'popuploc')">🖨️ In popup</button>    
         <button class="tab-button" onclick="openTab(event, 'banhang')">✍️ Nhật ký BH</button>  
     </div>
 
     <main class="content-area">
         <div id="Rtst" class="tab-content active">
-            <iframe class="content-iframe" src="./RT.html"></iframe>
+            <iframe id="iframe-rt" class="content-iframe" src="./RT.html"></iframe>
         </div>
         <div id="Lkst" class="tab-content">
-            <iframe class="content-iframe" src="./Lkst.html"></iframe>
+            <iframe id="iframe-lk" class="content-iframe" src="./Lkst.html"></iframe>
         </div>
-
         <div id="biNhanVien" class="tab-content">
-            <iframe class="content-iframe" src="./NV.html"></iframe>
+            <iframe id="iframe-nv" class="content-iframe" src="./NV.html"></iframe>
         </div>
-        
         <div id="baoCaoYCX" class="tab-content">
             <iframe class="content-iframe" src="./YCX.html"></iframe>
         </div>
@@ -308,55 +390,157 @@
         <div class="qr-overlay-content">
             <span class="qr-overlay-close" onclick="hideQrOverlay()">&times;</span>
             <img src="qr.png" alt="QR VietinBank" class="qr-overlay-img">
-            <span class="qr-overlay-text">Thấy hay thì mời Dương cốc Cà Phê^^!</span>
+            <span class="qr-overlay-text">💗Thấy hay thì mời Dương cốc Cà Phê!☕</span>
         </div>
     </div>
 
+    <div id="backupModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeBackupModal()">&times;</span>
+            <h2 style="margin-top:0; color: var(--dmx-blue);"><i class="fas fa-database"></i> Quản lý Dữ liệu Hệ thống</h2>
+            <p style="font-size: 0.9em; color: #666;">
+                Dưới đây là mã dữ liệu bao gồm <strong>TOÀN BỘ</strong> thông tin từ tất cả các trang (Realtime, Lũy kế, Nhân viên...).<br>
+                - Để <strong>Backup</strong>: Sao chép mã này và lưu lại.<br>
+                - Để <strong>Restore</strong>: Dán mã vào đây và ấn nút "Khôi phục".
+            </p>
+            
+            <textarea id="globalDataTextarea" class="backup-textarea" placeholder="Chuỗi dữ liệu backup sẽ hiện ở đây..."></textarea>
+            
+            <div class="modal-actions">
+                <button class="action-btn btn-clear" onclick="clearAllData()">🗑️ Xóa sạch dữ liệu</button>
+                <button class="action-btn btn-copy" onclick="copyGlobalData()">📋 Sao chép</button>
+                <button class="action-btn btn-restore" onclick="restoreGlobalData()">📥 Khôi phục & Tải lại</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast">Thông báo</div>
+
     <script>
+        // --- Tab Logic ---
         function openTab(evt, tabName) {
             let i, tabContents, tabButtons;
-
             tabContents = document.getElementsByClassName("tab-content");
             for (i = 0; i < tabContents.length; i++) {
                 tabContents[i].classList.remove("active");
             }
-
             tabButtons = document.getElementsByClassName("tab-button");
             for (i = 0; i < tabButtons.length; i++) {
                 tabButtons[i].classList.remove("active");
             }
-
             document.getElementById(tabName).classList.add("active");
             evt.currentTarget.classList.add("active");
         }
 
-        // JavaScript cho hiệu ứng phóng to QR
+        // --- QR Logic (Đã khôi phục: Hover/Di chuột) ---
         const qrContainer = document.getElementById('qrContainer');
         const qrOverlay = document.getElementById('qrOverlay');
 
-        // Hàm hiển thị overlay
+        // Sử dụng mouseenter (hover) thay vì click
         qrContainer.addEventListener('mouseenter', () => {
             qrOverlay.classList.add('active');
-            document.body.style.overflow = 'hidden'; // Ngăn cuộn trang
+            // document.body.style.overflow = 'hidden'; // Tùy chọn: chặn cuộn khi hiện overlay
         });
 
-        // Hàm ẩn overlay (khi click vào overlay hoặc nút đóng)
         function hideQrOverlay() {
             qrOverlay.classList.remove('active');
-            document.body.style.overflow = ''; // Cho phép cuộn trang lại
+            document.body.style.overflow = '';
         }
 
-        // Thêm event listener cho overlay để khi click ra ngoài nội dung thì đóng
+        // Thêm nút đóng và click ra ngoài để đóng
         qrOverlay.addEventListener('click', (event) => {
-            if (event.target === qrOverlay) { // Chỉ khi click trực tiếp vào lớp phủ
-                hideQrOverlay();
-            }
+            if (event.target === qrOverlay) hideQrOverlay();
         });
 
-        // Ngăn sự kiện click từ nội dung overlay lan ra lớp phủ
-        document.querySelector('.qr-overlay-content').addEventListener('click', (event) => {
-            event.stopPropagation();
-        });
+        // --- BACKUP / RESTORE GLOBAL LOGIC ---
+        function openBackupModal() {
+            const modal = document.getElementById('backupModal');
+            const textarea = document.getElementById('globalDataTextarea');
+            
+            // Lấy toàn bộ dữ liệu từ localStorage
+            const allData = {};
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                allData[key] = localStorage.getItem(key);
+            }
+            
+            // Chuyển thành chuỗi JSON đẹp
+            textarea.value = JSON.stringify(allData, null, 2);
+            modal.style.display = "block";
+        }
+
+        function closeBackupModal() {
+            document.getElementById('backupModal').style.display = "none";
+        }
+
+        function copyGlobalData() {
+            const textarea = document.getElementById('globalDataTextarea');
+            textarea.select();
+            textarea.setSelectionRange(0, 99999);
+            document.execCommand('copy');
+            showToast("Đã sao chép toàn bộ dữ liệu vào bộ nhớ đệm!");
+        }
+
+        function restoreGlobalData() {
+            const textarea = document.getElementById('globalDataTextarea');
+            const jsonStr = textarea.value.trim();
+            
+            if (!jsonStr) {
+                showToast("Vui lòng dán mã dữ liệu vào ô trống.");
+                return;
+            }
+
+            try {
+                const data = JSON.parse(jsonStr);
+                
+                if (typeof data !== 'object' || data === null) {
+                    throw new Error("Dữ liệu không hợp lệ.");
+                }
+
+                if (confirm("Cảnh báo: Hành động này sẽ GHI ĐÈ toàn bộ dữ liệu hiện tại của tất cả các trang bằng dữ liệu mới. Bạn có chắc chắn không?")) {
+                    // Xóa dữ liệu cũ
+                    localStorage.clear();
+                    
+                    // Nạp dữ liệu mới
+                    for (const key in data) {
+                        localStorage.setItem(key, data[key]);
+                    }
+
+                    showToast("Khôi phục thành công! Trang sẽ tải lại sau 2 giây...");
+                    setTimeout(() => {
+                        location.reload(); 
+                    }, 2000);
+                }
+            } catch (e) {
+                console.error(e);
+                showToast("Lỗi: Mã dữ liệu không đúng định dạng JSON.");
+            }
+        }
+
+        function clearAllData() {
+            if (confirm("CẢNH BÁO: Bạn có chắc chắn muốn XÓA SẠCH toàn bộ dữ liệu của Dashboard không? Hành động này không thể hoàn tác!")) {
+                localStorage.clear();
+                document.getElementById('globalDataTextarea').value = "{}";
+                showToast("Đã xóa sạch dữ liệu hệ thống.");
+                setTimeout(() => location.reload(), 1500);
+            }
+        }
+
+        // Toast Notification Function
+        function showToast(message) {
+            const x = document.getElementById("toast");
+            x.textContent = message;
+            x.className = "toast show";
+            setTimeout(function(){ x.className = x.className.replace("show", ""); }, 3000);
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('backupModal');
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        }
     </script>
 
 </body>
