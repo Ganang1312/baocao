@@ -9,7 +9,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         :root { --primary-accent: #108AB1; --success-color: #06D7A0; --warning-color: #FFD167; --danger-color: #F04770; --secondary-accent: #F78C6A; --text-primary: #073A4B; --text-on-dark: #FFFFFF; --text-muted: #5A7A84; --bg-main: #F4F7F9; --border-main: #DDE3E7; --shadow-main: 0px 2.8px 2.2px rgba(7, 58, 75, 0.02), 0px 6.7px 5.3px rgba(7, 58, 75, 0.028), 0px 12.5px 10px rgba(7, 58, 75, 0.035), 0px 22.3px 17.9px rgba(7, 58, 75, 0.042), 0px 41.8px 33.4px rgba(7, 58, 75, 0.05), 0px 100px 80px rgba(7, 58, 75, 0.07); }
+        /* ADDED: Hide controls in capture mode */
         .capture-mode .card, .capture-mode .input-section, .capture-mode .action-btn { box-shadow: none !important; transform: none !important; transition: none !important; }
+        .capture-mode #contestComparisonControls { display: none !important; }
+        
         html, body { width: 100%; margin: 0; padding: 0; overflow-x: hidden; background-color: var(--bg-main); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; color: var(--text-primary); }
         .container { width: 100%; max-width: 100%; margin: 0; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; gap: 25px; }
         header { text-align: center; margin-bottom: 10px; }
@@ -144,8 +147,9 @@
         .comparison-controls { display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 20px; padding: 10px; border-radius: 8px; background-color: #eef4f7; }
         .comparison-controls label { font-weight: 600; color: var(--text-primary); }
         .comparison-controls input[type="date"] { padding: 8px; border: 1px solid var(--border-main); border-radius: 6px; font-size: 14px; cursor: pointer; }
-        #contestComparisonControls { margin: 0 0 25px 0; padding: 15px 25px; background-color: #eef4f7; border-radius: 15px; display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; }
-        #contestComparisonControls label { display: flex; align-items: center; gap: 5px; font-weight: 600; }
+        /* UPDATED: Flex-wrap nowrap to force single row, added overflow handling if screen is small */
+        #contestComparisonControls { margin: 0 0 25px 0; padding: 15px 25px; background-color: #eef4f7; border-radius: 15px; display: flex; align-items: center; justify-content: center; gap: 15px; flex-wrap: nowrap; overflow-x: auto; }
+        #contestComparisonControls label { display: flex; align-items: center; gap: 5px; font-weight: 600; white-space: nowrap; }
         .modal { display: none; position: fixed; z-index: 1002; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4); padding-top: 60px; }
         .modal-content { background-color: #fefefe; margin: 5% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 600px; border-radius: 15px; box-shadow: var(--shadow-main); }
         .close-btn { color: #aaa; float: right; font-size: 28px; font-weight: bold; transition: color 0.2s; }
@@ -168,8 +172,8 @@
             .dashboard-layout-grid {grid-template-columns: 1fr !important;}
             .charts-column { grid-row: 1; }
             .comparison-controls { flex-direction: column; align-items: flex-start; }
-            #contestComparisonControls { flex-direction: column; align-items: center; }
-            #contestCategoryFilterControls { flex-direction: column; align-items: center !important; }
+            #contestComparisonControls { flex-direction: column; align-items: center; flex-wrap: wrap !important; }
+            #contestCategoryFilterControls { flex-direction: column; align-items: center !important; border-left: none !important; padding-left: 0 !important; margin-left: 0 !important; border-top: 1px dashed var(--border-main); padding-top: 10px; margin-top: 10px; }
         }
         @media (max-width: 768px) {
             .input-grid { grid-template-columns: 1fr; }
@@ -376,7 +380,8 @@
                         <button id="compareContestBtn" class="action-btn-small" style="background-color: var(--primary-accent); padding: 8px 16px;">So sánh Thi đua</button>
                         <button id="saveContestDataBtn" class="action-btn-small" style="background-color: var(--success-color); padding: 8px 16px;">Lưu Dữ liệu Hiện tại</button>
                         
-                        <div id="contestCategoryFilterControls" style="display: flex; flex-wrap: wrap; gap: 15px; align-items: center; margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border-main); width: 100%; justify-content: center;">
+                        <!-- UPDATED: Integrated directly into row, no new lines -->
+                        <div id="contestCategoryFilterControls" style="display: flex; gap: 15px; align-items: center; border-left: 2px solid #ccc; padding-left: 15px; margin-left: 5px;">
                             <label><input type="checkbox" id="selectAllContestCategories"> Hiển thị TẤT CẢ Ngành hàng</label>
                             <button id="openCategorySelectModal" class="action-btn-small" style="background-color: var(--secondary-accent); padding: 8px 16px;">
                                 Chọn Ngành hàng cụ thể
@@ -1180,8 +1185,8 @@
             if (res.count > 0) sections.push(`${title} (${res.count} nhóm):\n${res.list}`);
         });
 
-        const summaryText = `📊 BÁO CÁO SỨC KHOẺ SIÊU THỊ - ngày ${reportDate.getDate()}/${reportDate.getMonth() + 1}/${reportDate.getFullYear()} 📊\n-------------------\n- 🎯 Target Tháng: ${formatNumber(kpis.target, 0)}\n- 📈 Luỹ kế đạt: ${formatNumber(kpis.luyKe, 0)} (${formatNumber(kpis.htTarget, 1)}%)\n- 📉 DT còn lại: ${formatNumber(kpis.target - kpis.luyKe, 0)}\n- 🚀 Dự kiến đạt: ${formatNumber(kpis.dtDuKien, 0)} (${formatNumber(kpis.htDuKien, 1)}%)\n- 💹 So với cùng kỳ: ${kpis.chenhLech >= 0 ? 'Tăng' : 'Giảm'} ${formatNumber(Math.abs(kpis.chenhLech), 0)} (${formatNumber(kpis.growthRate, 2)}%)\n- 💳 Tỷ trọng trả góp: ${formatNumber(kpis.tyTrongTraGop, 2)}%\n- 💵 Doanh thu trả góp: ${formatNumber(kpis.doanhThuTraGop, 0)}\n- 💰 Mục tiêu ngày kỳ vọng: ${formatNumber(mucTieuNgayKyVong > 0 ? mucTieuNgayKyVong : 0, 0)}\n- 🏆 Số ngành hàng thi đua dự kiến đạt (Theo bộ lọc): ${filteredAllContest.filter(p => p.percentProjected >= 100).length}/${filteredAllContest.length}\n-------------------\n${sections.join('\n\n')}`;
-
+        const summaryText = `📊 BÁO CÁO SỨC KHOẺ SIÊU THỊ - ngày ${reportDate.getDate()}/${reportDate.getMonth() + 1}/${reportDate.getFullYear()}`;
+        
         container.innerHTML = `<h2><svg class="title-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20M12,19L8,15H10.5V12H13.5V15H16L12,19Z" /></svg>Nhận xét (Dạng văn bản)</h2><textarea class="summary-textarea" readonly>${summaryText}</textarea><button class="action-btn copySummaryBtn" style="width: 100%; max-width: 400px; margin: 15px auto 0 auto;"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z" /></svg>Sao chép Nhận xét</button>`;
         container.querySelector('.copySummaryBtn').addEventListener('click', (e) => { e.currentTarget.previousElementSibling.select(); document.execCommand('copy'); showToast('Đã sao chép nhận xét!'); });
         
