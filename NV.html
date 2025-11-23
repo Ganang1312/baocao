@@ -1,0 +1,2802 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Phân Tích KPI Hoàn Thiện</title>
+    <!-- Thêm Font Awesome cho các biểu tượng -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" xintegrity="sha512-iecdLmaskl7CV0sXU32F/eRj5lWc1BqB0/X/E5eF4/g5C3Z6aLgP4nFf5F5t2VfP4wL2gQJ7g==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root {
+            /* Bảng màu mới theo yêu cầu */
+            --primary-accent: #108AB1;
+            --success-color: #06D7A0;
+            --warning-color: #FFD167;
+            --danger-color: #F04770;
+            --secondary-accent: #F78C6A; /* Màu cam cho DT */
+            --text-primary: #073A4B;
+            --text-on-dark: #FFFFFF;
+            --text-muted: #5A7A84;
+            --bg-main: #F4F7F9;
+            --border-main: #DDE3E7;
+            --shadow-main: 0 4px 12px rgba(7, 58, 75, 0.08);
+
+            /* Ánh xạ các biến cũ sang biến mới để tương thích */
+            --primary-color: var(--primary-accent);
+            --card-bg: #FFFFFF;
+            
+            /* STRAM Colors */
+            --d1-color: #F04770;
+            --d2-color: #F78C6A;
+            --d3-color: #FFD167;
+            --d4-color: #06D7A0;
+            
+            /* Infographic Colors (Dark Theme) */
+            --info-bg-dark: #0D1B2A;
+            --info-text-light: #E0E7FF;
+            --info-pill-bg: #1A2E44;
+            
+            /* NEW COLORS FOR INFOGRAPHIC (giữ lại biến để tránh lỗi) */
+            --info-dark-bg: #1A2E44;
+            --info-mid-bg: #2B577A; 
+            --info-bottom-bg: #350A10; 
+            --info-bottom-pill-bg: #0D1B2A; 
+            
+            --gold-light: #FFEA7D;
+            --gold-dark: #FFD700;
+            --silver-light: #EFEFEF;
+            --silver-dark: #C0C0C0;
+            --bronze-light: #E99C5F;
+            --bronze-dark: #CD7F32;
+
+            /* NEW WARNING COLORS FOR BOTTOM 3 */
+            --warning-red-light: #FF99AA;
+            --warning-red-dark: #F04770;
+            --warning-red-ribbon: linear-gradient(180deg, #F04770, #CC335D, #F04770);
+            --warning-red-gradient: radial-gradient(circle at 30% 30%, var(--warning-red-light), var(--warning-red-dark));
+            --warning-red-border: 3px solid #CC335D;
+            --warning-text-color: #FFE0E5;
+            --text-on-warning: #000000; 
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; margin: 0; padding: 20px; background-color: var(--bg-main); color: var(--text-primary); }
+        .container { max-width: 100%; padding: 15px; box-sizing: border-box; }
+        .inner-container{ max-width: 100%; width: 100%; margin: 0; padding: 0; margin: auto; }
+        h1, h2, h3 { color: var(--text-primary); }
+        h1 { text-align: center; margin-bottom: 25px; font-weight: 600; }
+        h2 { font-size: 1.5em; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid var(--border-main); font-weight: 500;}
+        .card {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            border: 1px solid var(--border-main);
+            box-shadow: var(--shadow-main);
+            position: relative;
+        }
+        
+        /* NEW: Bố cục 3 cột cho phần nhập liệu */
+        .input-grid-compact { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 15px; /* Giảm khoảng cách */
+        }
+        
+        .input-group-compact {
+            display: flex; 
+            flex-direction: column; 
+            gap: 5px; /* Giảm khoảng cách */
+        }
+        
+        .input-group-compact h3 {
+            font-size: 1.1em;
+            margin-bottom: 5px;
+        }
+        
+        .input-group-compact textarea { 
+            width: 100%; 
+            height: 80px; /* Thu nhỏ chiều cao */
+            font-size: 12px;
+        }
+        
+        .btn-paste {
+            padding: 6px 10px; /* Thu nhỏ nút dán */
+            font-size: 13px;
+            font-weight: bold;
+            color: var(--text-on-dark);
+            background-color: var(--primary-accent);
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            align-self: flex-start;
+        }
+
+        /* End NEW compact input styles */
+
+        input[type="text"], input[type="number"], textarea, input[type="date"] { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 5px; font-size: 14px; box-sizing: border-box; }
+        input:disabled { background-color: #e9ecef; cursor: not-allowed; }
+        .btn-group { display: flex; gap: 15px; margin-top: 20px;}
+        .btn { display: block; width: 100%; padding: 15px; color: var(--text-on-dark); border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; transition: all 0.3s ease; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);}
+        
+        .btn:hover, .btn-paste:hover {
+            filter: brightness(90%);
+        }
+        .btn.btn-inline {
+            display: inline-block;
+            width: auto;
+            font-size: 16px;
+            padding: 12px 20px;
+        }
+        .btn.btn-small {
+            width: auto;
+            font-size: 14px;
+            padding: 8px 15px;
+        }
+        #processBtn { background-color: var(--primary-accent); }
+        #captureReportBtnMain { background-color: var(--primary-accent); }
+        #captureComprehensiveBtn { background-color: var(--primary-accent); }
+        #editDataBtn { background-color: var(--text-muted); margin-right: 10px; }
+        
+        /* CONTEST SELECTOR GROUP */
+        #contestSelectorGroup {
+            display: flex;
+            align-items: center;
+            padding: 5px 10px;
+            border-radius: 8px;
+            background-color: var(--bg-main);
+            border: 1px solid var(--border-main);
+        }
+        #allContestsCheckbox {
+            margin-right: 10px;
+            width: 18px;
+            height: 18px;
+            accent-color: var(--success-color);
+        }
+        #selectContestsBtnCustom { 
+            background-color: var(--secondary-accent);
+            color: var(--text-on-dark);
+            border-radius: 8px;
+            font-weight: bold;
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            border: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        #selectContestsBtnCustom:hover {
+            filter: brightness(90%);
+        }
+        #contestCountStatus {
+            margin-left: 10px;
+            font-size: 14px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        #captureCardsBtn { background-color: var(--secondary-accent); }
+        #captureAllCardsBtn { background-color: var(--success-color); margin-left: 15px; }
+        #copyCommentsBtn { background-color: var(--primary-accent); }
+        #captureInfographicBtn { background-color: var(--primary-accent); }
+        
+        /* Target Allocation Styles */
+        #target-allocation-container {
+            border: 1px solid var(--border-main);
+            border-radius: 8px;
+            padding: 15px;
+            background-color: #fff;
+            margin-top: 15px;
+        }
+        .target-mode-switch {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px dashed var(--border-main);
+        }
+        .target-mode-label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        .target-mode-label input {
+            width: 18px;
+            height: 18px;
+            margin-right: 8px;
+            accent-color: var(--primary-accent);
+        }
+        #employee-list-header {
+            display: grid;
+            grid-template-columns: 40px 2fr 1fr 1.5fr;
+            font-weight: bold;
+            padding: 8px 0;
+            background-color: #f8f9fa;
+            border-bottom: 2px solid var(--border-main);
+            text-align: center;
+        }
+        .employee-target-row {
+            display: grid;
+            grid-template-columns: 40px 2fr 1fr 1.5fr;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+            align-items: center;
+        }
+        .employee-target-row input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            margin: auto;
+            accent-color: var(--success-color);
+        }
+        .employee-target-row input[type="number"] {
+            width: 80%;
+            padding: 5px;
+            text-align: center;
+            margin: auto;
+        }
+        .employee-target-val {
+            font-weight: bold;
+            color: var(--primary-accent);
+            text-align: right;
+            padding-right: 15px;
+        }
+        .employee-name-label {
+            padding-left: 10px;
+            font-weight: 500;
+        }
+
+        .table-container { overflow-x: auto; margin-top: 25px;}
+        .toast {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            background-color: var(--danger-color); color: var(--text-on-dark); padding: 15px 25px;
+            border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            z-index: 1000; opacity: 0; visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s; font-weight: 500;
+        }
+        .toast.show { opacity: 1; visibility: visible; }
+        
+        #reportTitle { text-align: center; margin: 20px 0 0 0; display: none;}
+        .section-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            flex-wrap: wrap; /* Cho phép xuống dòng nếu quá hẹp */
+        }
+        .section-header > div { display: flex; gap: 10px; }
+        
+        /* --- GIAO DIỆN BẢNG TỔNG HỢP --- */
+        .comprehensive-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+        .comprehensive-table th, .comprehensive-table td {
+            border: 1px solid var(--border-main);
+            padding: 6px 3px;
+            text-align: center;
+            vertical-align: middle;
+        }
+        .comprehensive-table thead th {
+            background-color: #F9FAFB;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+        .comprehensive-table th:first-child, .comprehensive-table td:first-child {
+            position: sticky; left: 0; background-color: #fff; z-index: 2; width: 40px; min-width: 40px;
+        }
+         .comprehensive-table th:nth-child(2), .comprehensive-table td:nth-child(2) {
+            position: sticky; left: 40px; background-color: #fff; z-index: 2; min-width: 100px; width: 100px;
+        }
+        .comprehensive-table td:nth-child(2) { text-align: left; font-weight: 600; }
+        .clickable-name, .clickable-header {
+            color: var(--primary-accent); font-weight: 700; cursor: pointer; text-decoration: none;
+        }
+        .clickable-name:hover, .clickable-header:hover { text-decoration: underline; }
+        .rank-cell { font-weight: 700; font-size: 1.0em; }
+        .rank-icon { font-size: 1.5em; }
+        .heatmap-cell { color: var(--text-primary); font-size: 11px; }
+        
+        .percent-badge {
+            display: inline-block; padding: 3px 8px; border-radius: 15px; font-weight: 700; font-size: 1.0em; border: 2px solid; min-width: 45px; text-align: center;
+        }
+        .badge-green { background-color: rgba(6, 215, 160, 0.1); border-color: var(--success-color); color: var(--success-color); }
+        .badge-red { background-color: rgba(240, 71, 112, 0.1); border-color: var(--danger-color); color: var(--danger-color); }
+        
+        .progress-bar-wrapper { min-width: 110px; }
+        .progress-bar-label { display: flex; justify-content: space-between; align-items: center; font-size: 10px; margin-bottom: 4px; font-weight: 500; color: var(--text-muted);}
+        .progress-bar-bg { background-color: #e9ecef; border-radius: 50px; height: 8px; overflow: hidden;}
+        .progress-bar-fill { background-color: var(--primary-color); height: 100%; border-radius: 50px; transition: width 0.5s ease-in-out; }
+        .progress-bar-fill.success { background-color: var(--success-color); }
+
+        .contest-header-cell {
+            max-width: 70px; min-width: 60px; white-space: normal; font-size: 10px; vertical-align: top; padding: 6px 3px;
+        }
+        .contest-header-cell > div { margin-top: 5px; font-size: 1.0em; font-weight: 700; }
+
+        /* Modal Styles */
+        .modal {
+            display: none; position: fixed; z-index: 1001; left: 0; top: 0;
+            width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6);
+            padding-top: 50px;
+        }
+        .modal-content {
+            background-color: var(--bg-main); margin: auto; padding: 20px;
+            border: 1px solid #888; width: 95%; max-width: 1400px; border-radius: 12px;
+            position: relative; box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2),0 6px 20px 0 rgba(0,0,0,0.19);
+        }
+        .modal-close-btn {
+            color: #aaa; position: absolute; top: 10px; right: 25px;
+            font-size: 35px; font-weight: bold; cursor: pointer; z-index: 1002;
+        }
+        .modal-close-btn:hover, .modal-close-btn:focus { color: black; text-decoration: none; }
+        .modal .data-table { font-size: 14px; width: 100%; border-collapse: collapse; }
+        .modal .data-table th, .modal .data-table td { padding: 12px 10px; border: 1px solid var(--border-main); text-align: center; }
+        .modal .data-table thead th { background-color: #F9FAFB; }
+        
+        /* Modal Contest Selection */
+        #contest-selection-modal .modal-content { max-width: 600px; }
+        #contest-list { max-height: 250px; overflow-y: auto; border: 1px solid var(--border-main); padding: 15px; border-radius: 8px; background-color: #fff; }
+        
+        /* NEW CSS: Cải thiện vùng click cho Ngành hàng */
+        .contest-item { 
+            display: flex; 
+            align-items: center; 
+            padding: 8px 0; 
+            border-bottom: 1px dashed #eee; 
+            cursor: pointer; 
+            font-size: 15px; 
+            font-weight: 500; 
+        }
+        .contest-item:last-child { border-bottom: none; }
+        .contest-item input[type="checkbox"] { 
+            margin-right: 15px; 
+            width: 18px; 
+            height: 18px; 
+            accent-color: var(--primary-accent); 
+            pointer-events: none; /* Quan trọng: Ngăn checkbox tự phản ứng với click */
+        }
+        .contest-item label { 
+            flex-grow: 1; 
+            cursor: pointer; 
+            pointer-events: none; /* Quan trọng: Cho phép click vào dòng để kích hoạt sự kiện */
+        }
+        /* END NEW CSS */
+
+        .modal-footer { margin-top: 20px; text-align: right; }
+        /* XÓA #applyContestSelectionBtn khỏi đây vì nó được chuyển vào nút Nhập/Xuất */
+
+        /* --- GIAO DIỆN Thẻ KPI --- */
+        #allCardsContainer { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 25px; }
+        .perf-card {
+            border-radius: 10px; overflow: hidden; background: white; border: 1px solid var(--border-main);
+            display: flex; flex-direction: column; height: 100%; box-shadow: var(--shadow-main); position: relative;
+        }
+        .perf-header { display: grid; grid-template-columns: 80px minmax(0, 1fr) auto; background: var(--text-primary); color: var(--text-on-dark); padding: 15px; align-items: center; gap: 15px;}
+        .perf-header .perf-avatar { width: 60px; height: 60px; }
+        .perf-header .name-block h2 { margin: 0; font-size: 1.4em; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+        .perf-quote { font-size: 13px; opacity: 0.9; margin: 4px 0 0 0; font-style: italic; border-top: 1px solid rgba(255, 255, 255, 0.4); padding-top: 6px; font-weight: 500; }
+        .perf-header .rank-block { text-align: right; }
+        .perf-header .rank-block h3 { margin: 0; font-size: 1.5em; color: var(--warning-color); }
+        
+        .perf-body { padding: 20px; flex-grow: 1; }
+        .progress-bar-group { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; text-align: center; font-size: 12px; margin-top:20px; }
+        .progress-bar-group > div { padding: 8px 5px; border-radius: 8px; color: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .progress-bar-group .label { color: rgba(255, 255, 255, 0.85); font-weight: 500; font-size: 11px; }
+        .progress-bar-group .value { color: white; font-size: 1.25em; margin-top: 4px; display: block; font-weight: 700; }
+        .progress-bar-group > div:nth-child(1) { background-color: var(--primary-accent); }
+        .progress-bar-group > div:nth-child(2) { background-color: var(--secondary-accent); }
+        .progress-bar-group > div:nth-child(3) { background-color: var(--danger-color); }
+        .progress-bar-group > div:nth-child(4) { background-color: var(--success-color); }
+        .progress-bar-group > div:nth-child(5) { background-color: var(--text-muted); }
+
+        /* Comparison Styling for KPI Card */
+        .comparison-change {
+            display: inline-block;
+            margin-left: 5px;
+            font-size: 0.9em;
+            font-weight: 700;
+        }
+        .change-up { color: var(--success-color); }
+        .change-down { color: var(--danger-color); }
+        .change-equal { color: var(--text-muted); }
+        .change-na { color: var(--text-muted); font-style: italic; }
+
+        .contest-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+        .contest-table th, .contest-table td { border: 1px solid var(--border-main); padding: 8px 6px; text-align: center; vertical-align: middle; }
+        .contest-table th { background-color: #f2f3f7; font-weight: 600; font-size: 12px; }
+        .contest-table tbody tr:nth-child(even) { background-color: #f8f9fa; }
+        .contest-table tbody td:nth-child(2) { font-size: 10px; font-weight: normal; text-align: left; }
+        /* Thêm style cho cột Lũy kế và Thay đổi */
+        /* Đảm bảo kpi-actual là phần tử bên trong td và sử dụng inline flex */
+        .contest-table .kpi-actual > span { font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 5px; width: 100%; } 
+        .contest-table .kpi-change { font-weight: 700; }
+        
+        /* NEW: Class cho màu chữ dựa trên % */
+        .text-success { color: var(--success-color) !important; font-weight: 700; }
+        .text-warning { color: var(--warning-color) !important; font-weight: 700; }
+        .text-danger { color: var(--danger-color) !important; font-weight: 700; }
+
+
+        /* Comparison Table inside KPI card */
+        .kpi-comparison-summary {
+            display: none; /* Ẩn toàn bộ bảng so sánh theo yêu cầu mới */
+        }
+        
+        /* New Comparison Controls Container - THU NHỎ & SẮP XẾP LẠI */
+        /* Đã di chuyển xuống Bảng tổng hợp */
+        #comparison-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px; /* Giảm khoảng cách */
+            padding: 5px 0; /* Giảm padding */
+            margin-bottom: 0;
+            flex-wrap: nowrap; /* Buộc giữ trên một hàng (trên desktop) */
+            overflow-x: auto; /* Thêm cuộn ngang nếu quá chật */
+            
+            /* Tối ưu hóa kích thước nút nhỏ hơn */
+            height: 34px;
+        }
+        /* Đảm bảo các thành phần nhỏ lại */
+        #comparison-controls label {
+            font-size: 12px; /* Thu nhỏ label */
+            font-weight: 500;
+            color: var(--text-muted);
+            white-space: nowrap;
+            margin-right: -4px; /* Giảm thêm khoảng cách */
+        }
+        #comparison-controls input[type="date"] {
+            padding: 6px 8px;
+            width: 100px; /* Cố định width nhỏ hơn */
+            min-width: 100px;
+            font-size: 12px;
+        }
+        /* Điều chỉnh kích thước nút nhỏ hơn */
+        #comparison-controls .btn-small {
+            height: 34px; 
+            padding: 0 10px;
+            margin-top: 0;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+        #runComparisonBtn { background-color: var(--primary-accent); }
+        #toggleComparisonBtn { background-color: var(--danger-color); } /* Đặt lại màu cho nút Ẩn */
+        #captureCardsBtn { background-color: var(--secondary-accent); }
+        #captureAllCardsBtn { background-color: var(--success-color); }
+        
+        /* FIX: Ensure all controls in the header fit on one line on desktop */
+        .leaderboard-controls-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap; /* Cho phép xuống dòng nếu quá nhiều nút */
+            overflow-x: auto; /* Cho phép cuộn ngang nếu quá nhiều nút */
+            padding-bottom: 10px; /* Tạo khoảng cách với bảng */
+            margin-top: 15px; /* Khoảng cách với tiêu đề */
+            border-bottom: 1px solid var(--border-main);
+            gap: 10px; /* Khoảng cách giữa các nhóm */
+        }
+        .leaderboard-controls-row > div {
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0;
+            align-items: center;
+        }
+        .capture-group {
+            padding-left: 10px;
+            border-left: 1px solid var(--border-main);
+        }
+        
+        @media (max-width: 1024px) {
+             .leaderboard-controls-row {
+                flex-wrap: wrap; 
+             }
+             .leaderboard-controls-row > div {
+                 flex-grow: 1;
+                 min-width: 100%;
+                 margin-top: 10px;
+                 gap: 5px;
+             }
+             .leaderboard-controls-row .capture-group {
+                border-left: none;
+                padding-left: 0;
+                margin-top: 15px;
+             }
+             #comparison-controls {
+                 flex-wrap: wrap;
+                 height: auto;
+             }
+             #comparison-controls input[type="date"] {
+                width: 45%;
+                min-width: 110px;
+            }
+            #comparison-controls .btn-small {
+                flex-grow: 1;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            body { padding: 10px; }
+            .card { padding: 15px; margin-bottom: 15px; }
+            
+            #data-input-card .input-grid-compact {
+                grid-template-columns: 1fr;
+            }
+            .info-header-row, .mid-row {
+                grid-template-columns: 60px 2fr 1.2fr 1.2fr 1.5fr;
+                font-size: 11px;
+            }
+            .mid-name, .info-header-row .col-name { padding-left: 5px;}
+            
+            #allCardsContainer { 
+                grid-template-columns: 1fr; 
+                gap: 15px;
+            }
+            .perf-card .perf-body {
+                padding: 15px;
+            }
+            
+            /* SỬA LỖI: Cải thiện hiển thị Bảng Tổng Hợp */
+            #comprehensiveLeaderboardContainer {
+                max-height: 80vh !important; /* Tăng chiều cao tối đa */
+            }
+            .comprehensive-table {
+                font-size: 10px;
+            }
+            .comprehensive-table th:nth-child(2), .comprehensive-table td:nth-child(2) {
+                min-width: 80px; width: 80px;
+            }
+            .contest-header-cell {
+                min-width: 50px;
+            }
+            
+            /* Fix cho STRAM modal trên mobile */
+             .stram-modal-grid { 
+                grid-template-columns: 1fr; 
+                gap: 15px;
+            }
+            
+            /* Fix input date controls */
+             #comparison-controls input[type="date"] {
+                width: 45%;
+                min-width: 110px;
+            }
+            #comparison-controls .btn-small {
+                flex-grow: 1;
+            }
+            .leaderboard-controls-row > div {
+                flex-grow: 1;
+                min-width: 100%;
+                margin-top: 10px;
+                gap: 5px;
+             }
+             .leaderboard-controls-row .capture-group {
+                margin-top: 15px;
+             }
+            
+            .top3-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            /* Fix scale infographic on mobile */
+            #infographic-card {
+                /* Đảm bảo không scale trên mobile */
+                transform: scale(1);
+                width: 100%;
+                height: auto;
+                margin-bottom: 25px; 
+            }
+        }
+        
+        /* FIX HIỂN THỊ TỔNG HỢP (chung) */
+        #comprehensiveLeaderboardContainer {
+             max-height: 85vh; /* Tăng giới hạn cho màn hình lớn hơn mobile */
+        }
+
+        /* INFOGRAPHIC SCALE FIX (giữ lại 1/2 cho CSS an toàn) */
+        #infographic-card {
+            margin-bottom: 0; 
+            height: 0;
+        }
+
+        /* --- STRAM STYLES --- (Đảm bảo có đủ để hiển thị bảng) */
+        .stram-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .stram-table th, .stram-table td { border: 1px solid var(--border-main); padding: 10px 8px; text-align: center; vertical-align: middle; }
+        .stram-table thead th { background-color: #F9FAFB; font-weight: 600; }
+        .stram-table td:nth-child(2) { text-align: left; font-weight: 600; }
+        .d-level-badge { display: inline-block; padding: 4px 10px; border-radius: 15px; font-weight: 700; color: var(--text-primary); font-size: 1.1em; border: 2px solid; }
+        .d1 { background-color: rgba(240, 71, 112, 0.1); border-color: var(--d1-color); color: var(--d1-color); }
+        .d2 { background-color: rgba(247, 140, 106, 0.1); border-color: var(--d2-color); color: var(--d2-color); }
+        .d3 { background-color: rgba(255, 209, 103, 0.1); border-color: var(--d3-color); color: var(--d3-color); }
+        .d4 { background-color: rgba(6, 215, 160, 0.1); border-color: var(--d4-color); color: var(--d4-color); }
+        
+        .s-level-badge { display: inline-block; padding: 4px 10px; border-radius: 15px; font-weight: 700; color: #fff; font-size: 1.1em; }
+        .s1 { background-color: var(--d1-color); }
+        .s2 { background-color: var(--d2-color); }
+        .s3 { background-color: var(--d3-color); color: var(--text-primary); }
+        .s4 { background-color: var(--d4-color); color: var(--text-primary); }
+        
+        .btn-stram-detail { background-color: var(--primary-accent); color: white; padding: 6px 12px; border-radius: 5px; font-weight: bold; font-size: 13px; cursor: pointer; border: none; }
+        .btn-stram-detail:hover { filter: brightness(90%); }
+
+        /* STRAM Modal */
+        #stram-modal .modal-content { max-width: 1200px; }
+        .stram-modal-grid { display: grid; grid-template-columns: 350px 1fr; gap: 25px; }
+        .stram-leader-card { background: white; padding: 20px; border-radius: 10px; border: 1px solid var(--border-main); }
+        .stram-leader-card h3 { margin-top: 0; color: var(--text-primary); border-bottom: 1px solid var(--border-main); padding-bottom: 10px; }
+        .stram-leader-card h4 { color: var(--primary-accent); margin-bottom: 8px; }
+        .stram-leader-card ul { padding-left: 20px; margin-top: 0; font-size: 14px; color: var(--text-muted); }
+        .stram-tabs { display: flex; gap: 5px; border-bottom: 2px solid var(--border-main); margin-bottom: 20px; }
+        .stram-tab-btn { padding: 10px 20px; cursor: pointer; background: #f0f0f0; border: none; border-radius: 8px 8px 0 0; font-size: 16px; font-weight: 600; color: var(--text-muted); border-bottom: 2px solid transparent; margin-bottom: -2px; }
+        .stram-tab-btn.active { background: white; color: var(--primary-accent); border: 2px solid var(--border-main); border-bottom: 2px solid white; }
+        .stram-tab-content { display: none; background: white; padding: 20px; border-radius: 0 10px 10px 10px; border: 1px solid var(--border-main); border-top: none; }
+        .stram-tab-content.active { display: block; }
+        .stram-task-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        .stram-task-table th, .stram-task-table td { border: 1px solid var(--border-main); padding: 10px; text-align: center; vertical-align: middle; }
+        .stram-task-table th { background-color: #F9FAFB; }
+        .stram-task-table td:nth-child(1) { text-align: left; font-weight: 500;}
+        .stram-progress-bar-bg { background-color: #e9ecef; border-radius: 50px; height: 6px; overflow: hidden; margin-top: 5px; }
+        .stram-progress-bar-fill { height: 100%; border-radius: 50px; transition: width 0.5s ease-in-out; }
+        .stram-progress-bar-fill.success { background-color: var(--success-color); }
+        .stram-progress-bar-fill.danger { background-color: var(--danger-color); }
+        
+        .stram-task-details { font-size: 12px; color: var(--text-muted); margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border-main); display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; }
+        .stram-task-details > div { display: flex; justify-content: space-between; }
+        .stram-task-details .label { font-weight: 500; color: var(--text-primary); }
+        .stram-task-details .value { font-weight: 700; }
+        .stram-task-details .value.green { color: var(--success-color); }
+        .stram-task-details .value.red { color: var(--danger-color); }
+    </style>
+</head>
+<body onload="initDashboard()">
+    <div class="container">
+        <div class="inner-container">
+            
+            <div id="report-header" style="display: none; align-items: center; justify-content: space-between; margin-bottom: 25px;">
+                <h1 style="margin: 0; text-align: left;">Báo cáo Phân tích Hiệu suất</h1>
+                <div>
+                     <button id="editDataBtn" class="btn btn-inline">Chỉnh sửa Dữ liệu</button>
+                </div>
+            </div>
+
+            <div class="card" id="data-input-card">
+                 <h1 style="margin-top:0;">Dashboard Đánh giá Hiệu suất</h1>
+                
+                 <!-- NEW: Nhập/Xuất Toàn bộ Dữ liệu -->
+                <details class="import-export-data" style="margin-bottom: 25px; border-bottom: 1px dashed var(--border-main); padding-bottom: 15px;">
+                    <summary style="font-weight: bold; cursor: pointer; color: var(--primary-accent); font-size: 1.2em;">
+                        <i class="fas fa-database" style="margin-right: 8px;"></i> Nhập/Xuất Toàn bộ Dữ liệu Dashboard (Backup)
+                    </summary>
+                    <div style="padding: 10px 0;">
+                        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">Sao chép mã dưới đây để lưu trữ hoặc dán mã vào để khôi phục toàn bộ trạng thái:</p>
+                        <textarea id="allDataImportExportData" style="width: 100%; height: 120px; font-size: 12px; font-family: 'Courier New', Courier, monospace;"></textarea>
+                        <div style="display: flex; gap: 10px; margin-top: 10px; justify-content: space-between;">
+                            <button id="exportAllDataBtn" class="btn btn-small" style="background-color: var(--text-muted); width: 48%;">Xuất (Sao chép)</button>
+                            <button id="importAllDataBtn" class="btn btn-small" style="background-color: var(--primary-accent); width: 48%;">Nhập (Áp dụng)</button>
+                        </div>
+                    </div>
+                </details>
+                
+                <div class="input-grid-compact">
+                    <div class="input-group-compact">
+                        <h3><a href="https://bi.thegioididong.com/thi-dua-st?id=16753&tab=1&rt=2&dm=2&mt=1" target="_blank" rel="noopener noreferrer" style="text-decoration: none; color: inherit;">Bảng 2: Target Thi đua</a></h3>
+                        <textarea id="dataInput2"></textarea>
+                        <button class="btn-paste" data-target="dataInput2" data-filter="table2">Dán & Lọc</button>
+                    </div>
+                    <div class="input-group-compact">
+                        <h3><a href="https://bi.thegioididong.com/sieu-thi-con?id=16753&tab=bcdtnv&rt=2&dm=1" target="_blank" rel="noopener noreferrer" style="text-decoration: none; color: inherit;">Bảng 6: Doanh thu</a></h3>
+                        <textarea id="dataInput6"></textarea>
+                         <button class="btn-paste" data-target="dataInput6" data-filter="table6">Dán & Lọc</button>
+                    </div>
+                    <div class="input-group-compact">
+                        <h3><a href="https://bi.thegioididong.com/sieu-thi-con?id=16753&tab=bcdtnv&rt=2&dm=1" target="_blank" rel="noopener noreferrer" style="text-decoration: none; color: inherit;">Bảng 7: Dữ liệu Thi đua</a></h3>
+                        <textarea id="dataInput7"></textarea>
+                        <button class="btn-paste" data-target="dataInput7" data-filter="table7">Dán & Lọc</button>
+                    </div>
+                </div>
+                
+                <div class="grid-container grid-2-col" style="margin-top: 20px;">
+                    <div>
+                        <h3>Target Siêu thị (Triệu)</h3>
+                        <div style="margin-bottom: 10px;"><input type="text" id="storeTargetInput" onkeyup="updateEmployeeTargets()" placeholder="Nhập số tiền (VD: 5000)" /></div>
+                    </div>
+                    <div>
+                        <!-- Chức năng Lưu History -->
+                        <h3>Lưu Hiệu suất Theo Ngày</h3>
+                        <div style="display: flex; gap: 10px;">
+                            <button id="saveDailyBtn" class="btn btn-small" style="background-color: var(--secondary-accent); width: 100%;">Lưu Hiệu suất Ngày Hiện tại</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="target-allocation-section">
+                    <h3 style="margin-bottom: 10px;">Phân bổ Target cho Nhân viên</h3>
+                    <p style="font-size: 13px; color: var(--text-muted); margin-top: -10px; margin-bottom: 15px;">Danh sách nhân viên được lấy tự động từ dữ liệu Bảng 6 (hoặc Bảng 7). Vui lòng Dán dữ liệu vào các ô trên trước.</p>
+                    
+                    <div id="target-allocation-container">
+                         <div class="target-mode-switch">
+                            <label class="target-mode-label">
+                                <input type="radio" name="targetMode" value="even" checked onchange="renderEmployeeTargetList()"> Chia đều (All in One)
+                            </label>
+                            <label class="target-mode-label">
+                                <input type="radio" name="targetMode" value="custom" onchange="renderEmployeeTargetList()"> Tùy chỉnh %
+                            </label>
+                        </div>
+                        <div id="employee-list-header">
+                            <div><input type="checkbox" id="checkAllEmployees" checked onchange="toggleAllEmployees(this.checked)"></div>
+                            <div style="text-align: left; padding-left: 10px;">Tên Nhân viên</div>
+                            <div>Tỷ lệ (%)</div>
+                            <div style="text-align: right; padding-right: 15px;">Target (Tr)</div>
+                        </div>
+                        <div id="employee-target-list" style="max-height: 300px; overflow-y: auto;">
+                            <div style="padding: 20px; text-align: center; color: #aaa;">Chưa có dữ liệu nhân viên. Vui lòng dán Bảng 6 hoặc Bảng 7.</div>
+                        </div>
+                        <div style="text-align: right; padding-top: 10px; font-weight: bold; color: var(--text-primary);">
+                            Tổng: <span id="total-percent-display">0</span>% / <span id="total-target-display">0</span> Tr
+                        </div>
+                    </div>
+                </div>
+
+                <div class="btn-group">
+                    <button id="processBtn" class="btn">Tạo Báo Cáo Phân Tích</button>
+                    <!-- Nút So sánh đã được chuyển xuống dưới -->
+                </div>
+            </div>
+            
+            <div id="report-capture-area">
+                <h2 id="reportTitle"></h2>
+                <div id="month-progress-container" class="card" style="display: none; padding: 15px 25px; margin-bottom: 25px; margin-top: 0;"></div>
+
+                <div id="results-wrapper" style="display: none;">
+                    <div class="card">
+                        <div class="section-header">
+                            <h2 style="color:var(--primary-accent); margin-bottom: 0; border: none;"> Bảng Xếp Hạng Tổng Hợp</h2>
+                            <!-- NEW: NÚT ĐIỀU KHIỂN ĐÃ ĐƯỢC DI CHUYỂN VÀ TỐI ƯU HÓA -->
+                            <!-- Dùng leader-controls-row để đảm bảo các nhóm nằm trên một hàng -->
+                             <div class="leaderboard-controls-row">
+                                 <!-- NHÓM CHỌN NGÀNH HÀNG -->
+                                <div id="contestSelectorGroup">
+                                    <input type="checkbox" id="allContestsCheckbox">
+                                    <label for="allContestsCheckbox" style="cursor: pointer; font-weight: 500; white-space: nowrap;">Hiển thị TẤT CẢ Ngành hàng</label>
+                                    
+                                    <button id="selectContestsBtnCustom" class="btn btn-small">Chọn Ngành hàng</button>
+                                    <span id="contestCountStatus">(0/0 nhóm)</span>
+                                </div>
+                                
+                                <!-- NHÓM ĐIỀU KHIỂN SO SÁNH -->
+                                <div id="comparison-controls">
+                                    <label for="comparisonStartDate">BĐ:</label>
+                                    <input type="date" id="comparisonStartDate" class="date-input">
+                                    <label for="comparisonEndDate">KT:</label>
+                                    <input type="date" id="comparisonEndDate" class="date-input">
+                                    <button id="runComparisonBtn" class="btn btn-small">So sánh</button>
+                                    <button id="toggleComparisonBtn" class="btn btn-small" style="display: none;">Ẩn So sánh</button>
+                                </div>
+
+                                <!-- NHÓM NÚT CHỤP -->
+                                <div class="capture-group">
+                                    <button id="captureComprehensiveBtn" class="btn btn-small">Chụp Toàn Bảng</button>
+                                </div>
+                            </div>
+                            <!-- END NEW CONTROL ROW -->
+                            </div>
+                        <div id="comprehensiveLeaderboardContainer" class="table-container" style="margin-top:15px; max-height: 85vh; overflow-x: auto;"></div>
+                    </div>
+                    
+                    <!-- PHẦN STRAM ĐÃ ĐƯỢC KHÔI PHỤC -->
+                    <div class="card" id="stram-analysis-card">
+                        <div class="section-header">
+                            <h2 style="color:var(--primary-accent); margin-bottom: 0; border: none;">🔥 Chuẩn đoán STRAM & Phong cách Lãnh đạo</h2>
+                        </div>
+                        <div id="stramAnalysisContainer" class="table-container" style="margin-top:15px;"></div>
+                    </div>
+                    <!-- HẾT PHẦN STRAM KHÔI PHỤC -->
+
+                    </div>
+            </div>
+            
+            <div id="kpi-cards-section" style="display: none;">
+                 <div class="card">
+                    <div class="section-header">
+                        <h2 style="color:var(--primary-color); margin-bottom: 0;">🧑‍💻 Phân tích Chi tiết Hiệu suất Cá nhân</h2>
+                        
+                        <!-- RE-ADDED: Nút chụp KPI đã được đưa lại vào section header này -->
+                        <div style="display: flex; gap: 10px;">
+                            <button id="captureCardsBtn" class="btn btn-small">Chụp Thẻ KPI</button>
+                            <button id="captureAllCardsBtn" class="btn btn-small">Chụp Tất Cả KPI</button>
+                        </div>
+                    </div>
+                    <!-- container cards -->
+                    <div id="allCardsContainer"></div>
+                </div>
+            </div>
+
+            <div class="card" id="comments-card" style="display: none;">
+                <div id="comments-section">
+                     <div class="section-header" style="padding-bottom: 10px; border-bottom: 1px solid var(--border-main); margin-bottom: 15px;">
+                        <h3 style="margin:0; font-size: 1.2em;">📋 Nhận xét (Dạng văn bản)</h3>
+                        <button id="copyCommentsBtn" class="btn btn-small">Sao chép Nhận xét</button>
+                     </div>
+                     <textarea id="comments-textarea" readonly style="width: 100%; height: 200px; font-family: 'Courier New', Courier, monospace; background-color: #f8f9fa; border: 1px solid #ccc; border-radius: 5px; padding: 10px; resize: vertical;"></textarea>
+                </div>
+            </div>
+
+            <!-- ĐÃ XÓA div#infographic-card VÀ CÁC THÀNH PHẦN LIÊN QUAN -->
+            
+            </div>
+    </div>
+    
+    <div id="toast-notification" class="toast"></div>
+    
+    <div id="kpi-modal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close-btn" data-modal-id="kpi-modal">&times;</span>
+            <div id="modal-body"></div>
+        </div>
+    </div>
+    
+    <div id="stram-modal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close-btn" data-modal-id="stram-modal">&times;</span>
+            <h2 id="stram-modal-title" style="margin-top:0; color: var(--primary-accent);"></h2>
+            <div id="stram-modal-body"></div>
+        </div>
+    </div>
+    <div id="contest-selection-modal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close-btn" data-modal-id="contest-selection-modal">&times;</span>
+            <h2 style="margin-top:0; color: var(--primary-accent);">Chọn Ngành hàng Thi đua</h2>
+
+            <!-- NEW: Nhập/Xuất Panel (với nút Áp dụng Bộ lọc cùng hàng) -->
+            <details class="import-export-panel" open style="margin-bottom: 20px;">
+                <summary style="font-weight: bold; cursor: pointer; color: var(--text-primary); padding: 5px 0;">
+                    <i class="fas fa-folder-open" style="margin-right: 8px; color: var(--secondary-accent);"></i> Nhập/Xuất Danh sách (Click để mở)
+                </summary>
+                <div style="padding: 10px 0;">
+                    <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">Sao chép mã dưới đây để chia sẻ hoặc dán mã vào để nhập danh sách:</p>
+                    <textarea id="contestImportExportData" style="width: 100%; height: 80px; font-size: 12px; font-family: 'Courier New', Courier, monospace;"></textarea>
+                    <div style="display: flex; gap: 10px; margin-top: 10px; justify-content: space-between;">
+                        <button id="exportContestBtn" class="btn btn-small" style="background-color: var(--text-muted); width: 30%;">Sao chép (Xuất)</button>
+                        <button id="importContestBtn" class="btn btn-small" style="background-color: var(--success-color); width: 30%;">Áp dụng (Nhập)</button>
+                        <!-- Nút Áp dụng Bộ lọc mới -->
+                        <button id="applyContestSelectionBtn" class="btn btn-small" style="background-color: var(--primary-accent); width: 30%;">Áp dụng Bộ lọc</button>
+                    </div>
+                </div>
+            </details>
+            <!-- END NEW: Nhập/Xuất Panel -->
+            
+            <div style="margin-bottom: 15px;">
+                <div class="contest-item" onclick="toggleCheckboxInModal(event, 'modalSelectAllContests')">
+                    <input type="checkbox" id="modalSelectAllContests">
+                    <label for="modalSelectAllContests" style="font-weight: bold; color: var(--primary-accent);">**Chọn tất cả**</label>
+                </div>
+            </div>
+            <div id="contest-list">
+                </div>
+             <!-- XÓA modal-footer để chuyển nút Apply lên trên -->
+        </div>
+    </div>
+
+    <!-- Loại bỏ modal comparison-modal vì đã chuyển chức năng hiển thị trực tiếp lên thẻ KPI -->
+    
+    <script>
+    // Global data store
+    var finalData = [];
+    var allContestHeadersGlobal = []; // Danh sách tất cả các ngành hàng từ dataInput7
+    var selectedContestHeaders = []; // Danh sách các ngành hàng đã được chọn
+    var sortedContestHeadersGlobal = []; // Danh sách các ngành hàng đã được chọn và sắp xếp theo % HT
+    
+    // NEW: Biến lưu danh sách nhân viên tạm thời cho phần Target
+    var detectedEmployees = []; 
+    var comparisonResultsCache = null; // Cache kết quả so sánh
+
+    // --- KHỞI TẠO ---
+    function initDashboard() {
+        // Load saved values from localStorage
+        const idsToLoad = ['dataInput7', 'dataInput6', 'dataInput2', 'storeTargetInput', 'allContestsCheckbox'];
+        idsToLoad.forEach(id => {
+            const el = document.getElementById(id);
+            if(el) {
+                const savedValue = localStorage.getItem(id);
+                if (savedValue !== null) {
+                    if (el.type === 'checkbox') {
+                        el.checked = savedValue === 'true';
+                    } else {
+                        el.value = savedValue;
+                    }
+                }
+            }
+        });
+
+        // Load selected contests
+        const savedContests = localStorage.getItem('selectedContestHeaders');
+        if (savedContests) {
+            selectedContestHeaders = JSON.parse(savedContests);
+        }
+        
+        // **NEW FIX: Đặt ngày bắt đầu mặc định là hôm qua**
+        const startDateEl = document.getElementById('comparisonStartDate');
+        if (!startDateEl.value) {
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            startDateEl.value = formatDate(yesterday);
+        }
+        // **END NEW FIX**
+        
+        // Set default date values
+        document.getElementById('comparisonEndDate').value = getTodayDateString();
+
+        // Add event listeners
+        document.getElementById('processBtn').addEventListener('click', processData);
+        document.getElementById('editDataBtn').addEventListener('click', showInputCard);
+        document.getElementById('data-input-card').addEventListener('click', handlePaste);
+        document.getElementById('captureComprehensiveBtn').addEventListener('click', captureFullTable);
+        document.getElementById('captureCardsBtn').addEventListener('click', captureAllIndividualCards);
+        document.getElementById('captureAllCardsBtn').addEventListener('click', () => captureAndDownload(document.getElementById('kpi-cards-section'), 'TatCa_KPI_NhanVien.png'));
+        document.getElementById('copyCommentsBtn').addEventListener('click', copyComments);
+        
+        // NEW EVENT LISTENERS for Import/Export & History
+        document.getElementById('exportContestBtn').addEventListener('click', exportContestSelection);
+        document.getElementById('importContestBtn').addEventListener('click', importContestSelection);
+        
+        // NEW EVENT LISTENERS for All Data Import/Export
+        document.getElementById('exportAllDataBtn').addEventListener('click', exportAllData);
+        document.getElementById('importAllDataBtn').addEventListener('click', importAllData);
+        
+        document.getElementById('saveDailyBtn').addEventListener('click', () => { 
+            if (finalData.length === 0) {
+                showToast("Vui lòng tạo báo cáo trước khi lưu.");
+            } else {
+                saveDailyPerformance(finalData);
+            }
+        });
+        
+        // Gán sự kiện cho nút So sánh trực quan mới
+        document.getElementById('runComparisonBtn').addEventListener('click', runComparison);
+        
+        // Gán sự kiện cho nút Ẩn/Hiện So sánh mới
+        document.getElementById('toggleComparisonBtn').addEventListener('click', toggleComparisonDisplay);
+        
+        // Gắn sự kiện cho nút Áp dụng Bộ lọc trong Import/Export
+        document.getElementById('applyContestSelectionBtn').addEventListener('click', applyContestSelection);
+
+
+        // NEW CONTEST SELECTION BUTTONS
+        document.getElementById('selectContestsBtnCustom').addEventListener('click', showContestSelectionModal);
+        
+        // Checkbox "Hiển thị TẤT CẢ"
+        document.getElementById('allContestsCheckbox').addEventListener('change', (e) => {
+            localStorage.setItem('allContestsCheckbox', e.target.checked);
+            if (finalData.length > 0) {
+                showToast(e.target.checked ? 'Đã chọn hiển thị TẤT CẢ. Đang cập nhật báo cáo...' : 'Đã bỏ chọn TẤT CẢ. Đang cập nhật báo cáo...');
+                processData(true);
+            }
+        });
+        
+        // Sự kiện khi nhập/dán dữ liệu để tự động load danh sách nhân viên
+        ['dataInput6', 'dataInput7'].forEach(id => {
+            document.getElementById(id).addEventListener('input', () => {
+                 setTimeout(extractEmployeesFromInputs, 500); // Debounce nhẹ
+            });
+        });
+
+        
+        // Modal close buttons (chỉ còn cho Contest và Stram)
+        document.querySelectorAll('.modal-close-btn').forEach(btn => {
+            btn.onclick = () => {
+                document.getElementById(btn.dataset.modalId).style.display = "none";
+            };
+        });
+        
+        window.onclick = (event) => {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = "none";
+            }
+        };
+
+        updateContestStatusUI(); // Cập nhật trạng thái ngay khi load
+        // Thử load nhân viên nếu đã có dữ liệu trong localStorage
+        extractEmployeesFromInputs();
+        
+    }
+    
+    // --- HÀM HỖ TRỢ & TIỆN ÍCH ---
+    function showToast(message) {
+        const toast = document.getElementById('toast-notification');
+        toast.textContent = message;
+        toast.classList.add('show');
+        setTimeout(() => { toast.classList.remove('show'); }, 3000);
+    }
+
+    function formatNumberFull(num, decimals = 0) {
+        if (isNaN(num) || num === null) return '0';
+        return num.toLocaleString('vi-VN', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+    }
+    
+    // Hàm tạo chữ cái đầu (VD: D.X.L)
+    function getInitials(name) {
+        if (!name) return '';
+        const parts = name.trim().split(' ').filter(p => p);
+        // Lấy chữ cái đầu của tên cuối, nếu có 3 phần tử trở lên, lấy chữ cái đầu của 2 phần tử cuối (VD: Phan Đình Hưng -> P.H)
+        if (parts.length >= 2) {
+             return `${parts[0].charAt(0)}${parts[parts.length - 1].charAt(0)}`.toUpperCase();
+        }
+        // Nếu chỉ có 1 từ, lấy 2 chữ cái đầu
+        if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+        return '';
+    }
+
+    // Hàm tạo tên viết tắt (VD: N.T.Hoàng)
+    function abbreviateName(name) {
+        if (!name) return '';
+        const parts = name.trim().split(' ').filter(p => p);
+        if (parts.length <= 1) return name;
+        const lastName = parts.pop();
+        const initials = parts.map(p => p.charAt(0).toUpperCase()).join('.');
+        return `${initials}.${lastName}`;
+    }
+
+    // NEW: Hàm hỗ trợ ngày tháng
+    function formatDate(date) {
+        const d = new Date(date);
+        let month = '' + (d.getMonth() + 1);
+        let day = '' + d.getDate();
+        const year = d.getFullYear();
+
+        if (month.length < 2) month = '0' + month;
+        if (day.length < 2) day = '0' + day;
+
+        return [year, month, day].join('-');
+    }
+
+    function getTodayDateString() {
+        return formatDate(new Date());
+    }
+    
+    function getContestTimeframe(header) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const currentYear = today.getFullYear();
+        let passedDays, totalDays;
+
+        if (today.getDate() === 1) {
+            const prevMonthDate = new Date(currentYear, today.getMonth(), 0);
+            totalDays = prevMonthDate.getDate();
+            passedDays = prevMonthDate.getDate();
+        } else {
+            totalDays = new Date(currentYear, today.getMonth() + 1, 0).getDate();
+            passedDays = today.getDate() - 1;
+        }
+        
+        const defaultTimeframe = { passedDays: Math.max(1, passedDays), totalDays };
+        const match = header.match(/\(\s*T(\d+)\s*-\s*T(\d+)\s*\)/);
+
+        if (match) {
+            try {
+                const startMonth = parseInt(match[1], 10) - 1;
+                const endMonth = parseInt(match[2], 10) - 1;
+                const startDate = new Date(currentYear, startMonth, 1);
+                const endDate = new Date(currentYear, endMonth + 1, 0);
+
+                if (isNaN(startDate.getTime()) || isNaN(endDate.getTime()) || startDate > endDate) return defaultTimeframe;
+
+                let totalDaysInContest = 0;
+                for (let m = startMonth; m <= endMonth; m++) totalDaysInContest += new Date(currentYear, m + 1, 0).getDate();
+                
+                const yesterday = new Date();
+                yesterday.setDate(yesterday.getDate() - 1);
+                yesterday.setHours(0, 0, 0, 0);
+                
+                let passedDaysInContest = 0;
+                if (yesterday >= startDate) {
+                    passedDaysInContest = yesterday > endDate ? totalDaysInContest : Math.floor((yesterday - startDate) / (1000 * 60 * 60 * 24)) + 1;
+                }
+                
+                return { passedDays: Math.max(1, passedDaysInContest), totalDays: totalDaysInContest };
+            } catch (e) { return defaultTimeframe; }
+        }
+        return defaultTimeframe;
+    }
+    
+    // NEW: Cập nhật trạng thái số lượng ngành hàng đã chọn
+    function updateContestStatusUI() {
+        const total = allContestHeadersGlobal.length;
+        const selected = selectedContestHeaders.length;
+        
+        const allCheckbox = document.getElementById('allContestsCheckbox');
+        
+        if (allCheckbox && document.getElementById('contestCountStatus')) {
+            if (allCheckbox.checked) {
+                 document.getElementById('contestCountStatus').textContent = `(${total}/${total} nhóm được chọn)`;
+            } else {
+                 document.getElementById('contestCountStatus').textContent = `(${selected}/${total} nhóm được chọn)`;
+            }
+        }
+    }
+    
+    // --- NEW LOGIC: QUẢN LÝ NHÂN VIÊN VÀ TARGET ---
+    function extractEmployeesFromInputs() {
+        const data6 = document.getElementById('dataInput6').value;
+        const data7 = document.getElementById('dataInput7').value;
+        
+        let employeeSet = new Set();
+        
+        // Ưu tiên lấy từ Bảng 6 (theo yêu cầu)
+        if (data6.trim()) {
+            const lines = data6.split('\n');
+            const headers = lines[0].split('\t').map(h => h.trim());
+            const nameIndex = headers.findIndex(h => h.includes('Nhân viên'));
+            
+            if (nameIndex !== -1) {
+                 lines.slice(1).forEach(row => {
+                    const cells = row.split('\t');
+                    const nameId = (cells[nameIndex] || '').trim();
+                    // Lọc cơ bản: phải có dấu gạch ngang (ID - Tên) và không phải dòng tổng
+                    if (nameId && nameId.includes(' - ') && !nameId.startsWith('TỔNG') && !nameId.startsWith('BP')) {
+                         employeeSet.add(nameId);
+                    }
+                });
+            }
+        }
+        
+        // Nếu Bảng 6 chưa có, thử lấy từ Bảng 7 (fallback)
+        if (employeeSet.size === 0 && data7.trim()) {
+             const lines = data7.split('\n');
+             const subHeaderIndex = lines.findIndex(line => line.trim().startsWith('SLLK'));
+             if (subHeaderIndex !== -1) {
+                 lines.slice(subHeaderIndex + 1).forEach(row => {
+                     const cells = row.split('\t');
+                     const nameId = (cells[0] || '').trim();
+                     if (nameId && nameId.includes(' - ') && !nameId.startsWith('TỔNG') && !nameId.startsWith('BP')) {
+                        // Loại bỏ các dòng tổng kết ngành hàng
+                        if (!['PHỤ KIỆN', 'TỔNG CỘNG'].includes(nameId.split(' - ')[0].trim().toUpperCase())) {
+                             employeeSet.add(nameId);
+                        }
+                     }
+                 });
+             }
+        }
+        
+        if (employeeSet.size > 0) {
+            const newEmployeeList = Array.from(employeeSet).sort();
+            // Chỉ render lại nếu danh sách thay đổi
+            if (JSON.stringify(newEmployeeList) !== JSON.stringify(detectedEmployees.map(e => e.id))) {
+                detectedEmployees = newEmployeeList.map(id => ({ id: id, name: id.split(' - ')[0].trim(), checked: true, percent: 0 }));
+                renderEmployeeTargetList();
+            }
+        }
+    }
+    
+    function renderEmployeeTargetList() {
+        const container = document.getElementById('employee-target-list');
+        const mode = document.querySelector('input[name="targetMode"]:checked').value;
+        
+        if (detectedEmployees.length === 0) {
+            container.innerHTML = '<div style="padding: 20px; text-align: center; color: #aaa;">Chưa có dữ liệu nhân viên. Vui lòng dán Bảng 6 hoặc Bảng 7.</div>';
+            return;
+        }
+        
+        let html = '';
+        detectedEmployees.forEach((emp, index) => {
+            const disabled = mode === 'even' ? 'disabled' : '';
+            const bgStyle = mode === 'even' ? 'background-color: #f0f0f0;' : '';
+            
+            html += `
+                <div class="employee-target-row">
+                    <input type="checkbox" id="emp-check-${index}" ${emp.checked ? 'checked' : ''} onchange="updateEmployeeCheck(${index}, this.checked)">
+                    <label class="employee-name-label" for="emp-check-${index}">${emp.name}</label>
+                    <div>
+                        <input type="number" id="emp-percent-${index}" value="${emp.percent}" ${disabled} style="${bgStyle}" min="0" max="100" step="0.1" onchange="updateEmployeePercent(${index}, this.value)">
+                    </div>
+                    <div class="employee-target-val" id="emp-target-val-${index}">0</div>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+        updateEmployeeTargets(); // Tính toán lại giá trị
+    }
+    
+    function toggleAllEmployees(checked) {
+        detectedEmployees.forEach(emp => emp.checked = checked);
+        renderEmployeeTargetList();
+    }
+    
+    function updateEmployeeCheck(index, checked) {
+        detectedEmployees[index].checked = checked;
+        updateEmployeeTargets();
+    }
+    
+    function updateEmployeePercent(index, value) {
+        detectedEmployees[index].percent = parseFloat(value) || 0;
+        updateEmployeeTargets();
+    }
+    
+    function updateEmployeeTargets() {
+        const totalTarget = parseFloat(document.getElementById('storeTargetInput').value.replace(/,/g, '')) || 0;
+        const mode = document.querySelector('input[name="targetMode"]:checked').value;
+        
+        // Lọc danh sách nhân viên được chọn
+        const activeEmployees = detectedEmployees.filter(e => e.checked);
+        const count = activeEmployees.length;
+        
+        let totalPercentUsed = 0;
+        let totalValueUsed = 0;
+        
+        if (mode === 'even') {
+            // Chế độ chia đều
+            const evenValue = count > 0 ? totalTarget / count : 0;
+            const evenPercent = totalTarget > 0 ? (evenValue / totalTarget * 100) : 0;
+            
+            detectedEmployees.forEach((emp, index) => {
+                const valEl = document.getElementById(`emp-target-val-${index}`);
+                const perEl = document.getElementById(`emp-percent-${index}`);
+                if (valEl && perEl) {
+                    if (emp.checked) {
+                        valEl.textContent = formatNumberFull(evenValue, 0);
+                        perEl.value = evenPercent.toFixed(2);
+                        totalValueUsed += evenValue;
+                        totalPercentUsed += evenPercent;
+                    } else {
+                        valEl.textContent = '0';
+                        perEl.value = '';
+                    }
+                }
+            });
+        } else {
+            // Chế độ tùy chỉnh
+             detectedEmployees.forEach((emp, index) => {
+                const valEl = document.getElementById(`emp-target-val-${index}`);
+                if (valEl) {
+                    if (emp.checked) {
+                        const val = totalTarget * (emp.percent / 100);
+                        valEl.textContent = formatNumberFull(val, 0);
+                        totalValueUsed += val;
+                        totalPercentUsed += emp.percent;
+                    } else {
+                        valEl.textContent = '0';
+                    }
+                }
+            });
+        }
+        
+        // Update Summary
+        document.getElementById('total-percent-display').textContent = Math.round(totalPercentUsed);
+        document.getElementById('total-target-display').textContent = formatNumberFull(totalValueUsed, 0);
+        
+        // Cảnh báo nếu vượt quá 100% hoặc Target
+        const summaryEl = document.getElementById('total-percent-display').parentNode;
+        if (Math.round(totalPercentUsed) > 100) {
+            summaryEl.style.color = 'var(--danger-color)';
+        } else {
+            summaryEl.style.color = 'var(--text-primary)';
+        }
+    }
+
+
+    // --- TƯƠNG TÁC UI & XỬ LÝ SỰ KIỆN ---
+    
+    // NEW: Hàm Export All Data
+    function exportAllData() {
+        const targetMode = document.querySelector('input[name="targetMode"]:checked').value;
+        const employeeTargets = detectedEmployees.map(e => ({ 
+            id: e.id, 
+            checked: e.checked, 
+            percent: e.percent,
+            name: e.name
+        }));
+        
+        const allData = {
+            dataInput2: document.getElementById('dataInput2').value,
+            dataInput6: document.getElementById('dataInput6').value,
+            dataInput7: document.getElementById('dataInput7').value,
+            storeTargetInput: document.getElementById('storeTargetInput').value,
+            targetMode: targetMode,
+            employeeTargets: employeeTargets
+        };
+        
+        const jsonString = JSON.stringify(allData, null, 2);
+        document.getElementById('allDataImportExportData').value = jsonString;
+        
+        try {
+             document.getElementById('allDataImportExportData').select();
+             document.getElementById('allDataImportExportData').setSelectionRange(0, 99999); 
+             document.execCommand('copy');
+             window.getSelection().removeAllRanges();
+             showToast('Đã sao chép toàn bộ dữ liệu vào clipboard!');
+        } catch (err) {
+             showToast('Không thể sao chép tự động. Vui lòng copy thủ công.');
+        }
+    }
+
+    // NEW: Hàm Import All Data
+    function importAllData() {
+        const jsonString = document.getElementById('allDataImportExportData').value;
+        try {
+            const importedData = JSON.parse(jsonString);
+            
+            // 1. Restore main inputs
+            document.getElementById('dataInput2').value = importedData.dataInput2 || '';
+            document.getElementById('dataInput6').value = importedData.dataInput6 || '';
+            document.getElementById('dataInput7').value = importedData.dataInput7 || '';
+            document.getElementById('storeTargetInput').value = importedData.storeTargetInput || '';
+            
+            // 2. Restore Target Mode
+            const targetModeRadios = document.querySelectorAll('input[name="targetMode"]');
+            targetModeRadios.forEach(radio => {
+                radio.checked = radio.value === importedData.targetMode;
+            });
+            
+            // 3. Restore Employee Targets
+            if (importedData.employeeTargets && Array.isArray(importedData.employeeTargets)) {
+                detectedEmployees = importedData.employeeTargets.map(e => ({
+                    id: e.id,
+                    name: e.name,
+                    checked: e.checked === true,
+                    percent: parseFloat(e.percent) || 0
+                }));
+                renderEmployeeTargetList();
+            }
+            
+            showToast('Đã khôi phục toàn bộ dữ liệu thành công! Vui lòng nhấn "Tạo Báo Cáo Phân Tích".');
+
+        } catch (e) {
+            showToast(`Lỗi nhập dữ liệu: ${e.message}`);
+            console.error("Import error:", e);
+        }
+    }
+
+    function showInputCard() {
+        document.getElementById('results-wrapper').style.display = 'none';
+        document.getElementById('report-header').style.display = 'none';
+        document.getElementById('comments-card').style.display = 'none';
+        document.getElementById('kpi-cards-section').style.display = 'none';
+        document.getElementById('data-input-card').style.display = 'block';
+    }
+
+    async function handlePaste(event) {
+        if (!event.target.classList.contains('btn-paste')) return;
+        const targetId = event.target.dataset.target;
+        const filterType = event.target.dataset.filter;
+        const textarea = document.getElementById(targetId);
+        if (!textarea) return;
+
+        try {
+            const text = await navigator.clipboard.readText();
+            const markers = {
+                table2: /^Ngành hàng\s+DTQĐ\s+Target/,
+                table6: /^Nhân viên\s+DTLK\s+DTQĐ/,
+                table7: /^Phòng ban/
+            };
+            const endMarker = "Hỗ trợ BI";
+            const lines = text.split('\n');
+            const startIndex = lines.findIndex(line => markers[filterType] && markers[filterType].test(line.trim()));
+            if (startIndex !== -1) {
+                let endIndex = lines.findIndex(line => line.includes(endMarker), startIndex);
+                if (endIndex === -1) endIndex = lines.length;
+                textarea.value = lines.slice(startIndex, endIndex).join('\n').trim();
+                showToast(`Đã dán và lọc dữ liệu cho ${targetId}!`);
+                
+                // Trigger extract
+                setTimeout(extractEmployeesFromInputs, 200);
+            } else {
+                textarea.value = text;
+                showToast(`Đã dán dữ liệu (không tìm thấy điểm bắt đầu để lọc).`);
+                 // Trigger extract
+                setTimeout(extractEmployeesFromInputs, 200);
+            }
+        } catch (err) {
+            showToast('Không thể dán từ clipboard.');
+        }
+    }
+
+    // NEW: Hàm chụp ảnh và tải về
+    function captureAndDownload(element, filename) {
+        const commentsCard = document.getElementById('comments-card');
+        const originalDisplay = commentsCard ? commentsCard.style.display : 'none';
+        
+        let scaleFactor = 1;
+        if(filename === 'Infographic_Ranking.png') {
+            if(commentsCard) commentsCard.style.display = 'none';
+        } else {
+            if(commentsCard) commentsCard.style.display = 'none';
+        }
+        
+        const reportTitleEl = document.getElementById('reportTitle');
+        if(reportTitleEl) reportTitleEl.style.display = 'block'; 
+        
+        html2canvas(element, { 
+            useCORS: true, 
+            scale: 2 * scaleFactor, 
+            backgroundColor: getComputedStyle(document.body).getPropertyValue('--bg-main') 
+        }).then(canvas => {
+            const link = document.createElement('a');
+            link.download = filename;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }).catch(err => {
+            showToast("Lỗi khi chụp ảnh màn hình.");
+            console.error(err);
+        }).finally(() => {
+            if(reportTitleEl) reportTitleEl.style.display = 'none'; 
+            if(commentsCard) commentsCard.style.display = originalDisplay;
+        });
+    }
+
+    // NEW: Hàm chụp ảnh và copy vào clipboard
+    function captureAndCopyToClipboard(element) {
+        // Kiểm tra xem trình duyệt có hỗ trợ API Clipboard.write() không
+        if (!navigator.clipboard || !navigator.clipboard.write) {
+            showToast("Trình duyệt không hỗ trợ sao chép ảnh vào clipboard.");
+            return;
+        }
+
+        const commentsCard = document.getElementById('comments-card');
+        const originalDisplay = commentsCard ? commentsCard.style.display : 'none';
+        if(commentsCard) commentsCard.style.display = 'none';
+
+        const reportTitleEl = document.getElementById('reportTitle');
+        if(reportTitleEl) reportTitleEl.style.display = 'block'; 
+
+        let scaleFactor = 1;
+        
+        html2canvas(element, {
+            useCORS: true,
+            scale: 2 * scaleFactor, 
+            backgroundColor: getComputedStyle(document.body).getPropertyValue('--bg-main') 
+        }).then(canvas => {
+            // Chuyển canvas sang Blob
+            canvas.toBlob(async (blob) => {
+                try {
+                    // Sử dụng Clipboard API để ghi Blob (ảnh) vào clipboard
+                    await navigator.clipboard.write([
+                        new ClipboardItem({ 'image/png': blob })
+                    ]);
+                    showToast("Đã sao chép ảnh vào clipboard!");
+                } catch (err) {
+                    console.error("Lỗi khi sao chép ảnh vào clipboard:", err);
+                    showToast("Lỗi: Không thể sao chép ảnh. Vui lòng thử Chụp Ảnh (Tải xuống).");
+                }
+            }, 'image/png');
+        }).catch(err => {
+            showToast("Lỗi khi xử lý hình ảnh.");
+            console.error(err);
+        }).finally(() => {
+            if(reportTitleEl) reportTitleEl.style.display = 'none';
+            if(commentsCard) commentsCard.style.display = originalDisplay;
+        });
+    }
+
+
+    // --- HÀM CHỤP ẢNH TOÀN BẢNG ---
+    function captureFullTable() {
+        const container = document.getElementById('comprehensiveLeaderboardContainer');
+        if (!container || !container.closest('.card')) {
+             showToast("Lỗi: Không tìm thấy container bảng xếp hạng hoặc phần tử cha.");
+             return;
+        }
+        const cardElement = container.closest('.card');
+        const originalStyles = {
+            containerOverflowX: container.style.overflowX,
+            containerMaxHeight: container.style.maxHeight,
+            cardWidth: cardElement.style.width,
+            cardMaxWidth: cardElement.style.maxWidth,
+            bodyOverflow: document.body.style.overflow 
+        };
+
+        container.style.overflowX = 'visible'; 
+        container.style.maxHeight = 'none';
+        cardElement.style.width = 'fit-content';
+        cardElement.style.maxWidth = 'none';
+        document.body.style.overflow = 'hidden';
+
+        showToast('Đang xử lý ảnh toàn bảng (bao gồm phần bị che)...');
+
+        setTimeout(() => {
+            html2canvas(cardElement, {
+                scale: 2, 
+                useCORS: true,
+                backgroundColor: getComputedStyle(document.body).getPropertyValue('--bg-main'),
+                width: cardElement.scrollWidth + 20, 
+                height: cardElement.scrollHeight,
+                windowWidth: cardElement.scrollWidth + 50, 
+                x: 0,
+                y: 0
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = 'BangTongHop_Full.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                showToast("Đã chụp ảnh thành công!");
+            }).catch(err => {
+                showToast("Lỗi khi chụp ảnh màn hình. (Chi tiết: " + err.message + ")");
+                console.error("Lỗi html2canvas:", err);
+            }).finally(() => {
+                container.style.overflowX = originalStyles.containerOverflowX;
+                container.style.maxHeight = originalStyles.containerMaxHeight;
+                cardElement.style.width = originalStyles.cardWidth;
+                cardElement.style.maxWidth = originalStyles.cardMaxWidth;
+                document.body.style.overflow = originalStyles.bodyOverflow;
+            });
+        }, 500); 
+    }
+
+    function captureAllIndividualCards() {
+        const cards = document.querySelectorAll('#allCardsContainer .perf-card');
+        if (cards.length === 0) return showToast("Không có thẻ KPI nào để chụp.");
+        
+        showToast(`Bắt đầu chụp ${cards.length} thẻ KPI...`);
+        cards.forEach((card, index) => {
+            const employeeName = card.querySelector('.name-block h2').textContent.trim();
+            setTimeout(() => {
+                captureAndDownload(card, `KPI-${employeeName}.png`);
+            }, index * 1000);
+        });
+    }
+
+    function copyComments() {
+        const textarea = document.getElementById('comments-textarea');
+        textarea.select();
+        textarea.setSelectionRange(0, 99999); 
+        try {
+            document.execCommand('copy');
+            showToast('Đã sao chép nhận xét!');
+        } catch (err) {
+            showToast('Lỗi khi sao chép.');
+        }
+        window.getSelection().removeAllRanges();
+    }
+
+    // --- NEW: CHỨC NĂNG NHẬP/XUẤT NGÀNH HÀNG ---
+    function exportContestSelection() {
+        const data = JSON.stringify(selectedContestHeaders);
+        const textarea = document.getElementById('contestImportExportData');
+        textarea.value = data;
+        
+        try {
+            textarea.select();
+            textarea.setSelectionRange(0, 99999); 
+            document.execCommand('copy');
+            window.getSelection().removeAllRanges();
+            showToast('Đã sao chép danh sách ngành hàng (JSON).');
+        } catch (err) {
+            showToast('Không thể sao chép tự động. Vui lòng copy thủ công.');
+        }
+    }
+
+    function importContestSelection() {
+        const text = document.getElementById('contestImportExportData').value;
+        try {
+            const importedList = JSON.parse(text);
+            if (!Array.isArray(importedList) || importedList.some(item => typeof item !== 'string')) {
+                 throw new Error("Dữ liệu không hợp lệ. Phải là một mảng chuỗi (JSON Array of strings).");
+            }
+            
+            const validContests = importedList.filter(c => allContestHeadersGlobal.includes(c));
+            if (validContests.length === 0 && allContestHeadersGlobal.length > 0) {
+                showToast("Không có ngành hàng hợp lệ nào được nhập. Đã hủy thao tác.");
+                return;
+            }
+            
+            // Nếu có ngành hàng hợp lệ, dùng danh sách đó. Nếu không (nhưng allContestHeadersGlobal có), dùng tất cả.
+            selectedContestHeaders = validContests.length > 0 ? validContests : [...allContestHeadersGlobal];
+            localStorage.setItem('selectedContestHeaders', JSON.stringify(selectedContests));
+            
+            renderContestListInModal(); // Cập nhật lại list checkbox
+            updateModalSelectAll(); // Cập nhật lại checkbox "Chọn tất cả"
+            
+            showToast(`Đã nhập thành công ${selectedContests.length} ngành hàng hợp lệ! Vui lòng nhấn 'Áp dụng Bộ lọc'.`);
+
+        } catch (e) {
+            showToast(`Lỗi nhập dữ liệu: ${e.message}`);
+            console.error("Import error:", e);
+        }
+    }
+    
+    // NEW FUNCTION: Toggle checkbox when clicking anywhere in the contest-item row
+    function toggleCheckboxInModal(event, checkboxId) {
+        event.stopPropagation();
+        const target = event.currentTarget || event.target;
+        const checkbox = target.querySelector(`#${checkboxId}`);
+        if (checkbox) {
+            checkbox.checked = !checkbox.checked;
+            updateModalSelectAll();
+        }
+    }
+
+    // Hàm render lại list checkbox trong modal (để gọi sau khi import)
+    function renderContestListInModal() {
+        const listContainer = document.getElementById('contest-list');
+        listContainer.innerHTML = '';
+        
+        // Cập nhật trạng thái checkbox "Chọn tất cả" trong modal
+        const modalSelectAll = document.getElementById('modalSelectAllContests');
+        modalSelectAll.checked = selectedContestHeaders.length === allContestHeadersGlobal.length && allContestHeadersGlobal.length > 0;
+        
+        // Gắn sự kiện cho checkbox "Chọn tất cả" trong modal
+        modalSelectAll.onclick = (event) => {
+            event.stopPropagation();
+            toggleAllModalContests(event.target.checked);
+        };
+
+        allContestHeadersGlobal.forEach(contest => {
+            const isChecked = selectedContestHeaders.includes(contest);
+            const itemId = `check-${contest.replace(/[^a-zA-Z0-9]/g, '-')}`;
+            const itemHtml = `
+                <div class="contest-item" onclick="toggleCheckboxInModal(event, '${itemId}')">
+                    <input type="checkbox" id="${itemId}" value="${contest}" ${isChecked ? 'checked' : ''}>
+                    <label for="${itemId}">${contest}</label>
+                </div>
+            `;
+            listContainer.innerHTML += itemHtml;
+        });
+    }
+
+    function showContestSelectionModal() {
+        if (allContestHeadersGlobal.length === 0) {
+            showToast("Vui lòng dán đủ dữ liệu đầu vào và chạy 'Tạo Báo Cáo' trước.");
+            return;
+        }
+        
+        renderContestListInModal(); // Gọi hàm render list mới
+
+        // Tắt Checkbox "Hiển thị TẤT CẢ" bên ngoài khi mở modal
+        document.getElementById('allContestsCheckbox').checked = false;
+        localStorage.setItem('allContestsCheckbox', false);
+        
+        document.getElementById('contest-selection-modal').style.display = 'block';
+    }
+
+    function toggleAllModalContests(select) {
+        const checkboxes = document.querySelectorAll('#contest-list input[type="checkbox"]');
+        checkboxes.forEach(cb => cb.checked = select);
+    }
+    
+    function updateModalSelectAll() {
+         const allCheckboxes = document.querySelectorAll('#contest-list input[type="checkbox"]');
+         const checkedCount = Array.from(allCheckboxes).filter(cb => cb.checked).length;
+         document.getElementById('modalSelectAllContests').checked = checkedCount === allCheckboxes.length && checkedCount > 0;
+    }
+    
+    function applyContestSelection() {
+        const checkboxes = document.querySelectorAll('#contest-list input[type="checkbox"]:checked');
+        const newSelectedContests = Array.from(checkboxes).map(cb => cb.value);
+        
+        if (newSelectedContests.length === 0) {
+            showToast("Vui lòng chọn ít nhất một ngành hàng.");
+            return;
+        }
+        
+        selectedContestHeaders = newSelectedContests;
+        localStorage.setItem('selectedContestHeaders', JSON.stringify(selectedContests));
+        document.getElementById('contest-selection-modal').style.display = 'none';
+        
+        updateContestStatusUI();
+
+        if (finalData.length > 0) {
+            // Chạy lại processData để áp dụng bộ lọc mới và cập nhật UI
+            showToast('Đã lưu lựa chọn. Đang cập nhật lại báo cáo...');
+            processData(true); 
+        } else {
+            showToast('Đã lưu lựa chọn ngành hàng.');
+        }
+    }
+
+    // --- NEW: CHỨC NĂNG LỊCH SỬ VÀ SO SÁNH ---
+    
+    // Thêm hàm mới để ẩn/hiện so sánh
+    function toggleComparisonDisplay() {
+        const toggleBtn = document.getElementById('toggleComparisonBtn');
+        
+        if (comparisonResultsCache) {
+            // Nếu đang hiện, thì ẩn đi
+            comparisonResultsCache = null;
+            toggleBtn.textContent = 'Hiện So sánh';
+            toggleBtn.style.backgroundColor = 'var(--primary-accent)';
+            showToast('Đã ẩn chế độ so sánh.');
+        } else {
+            // Nếu đang ẩn, thì chạy so sánh lại với ngày đã chọn
+            const startDateStr = document.getElementById('comparisonStartDate').value;
+            const endDateStr = document.getElementById('comparisonEndDate').value;
+            
+            if (!startDateStr || !endDateStr) {
+                toggleBtn.textContent = 'Ẩn So sánh';
+                toggleBtn.style.backgroundColor = 'var(--text-muted)';
+                return showToast('Vui lòng chọn ngày Bắt đầu và Kết thúc để hiện So sánh.');
+            }
+            
+            // Chạy lại logic so sánh
+            runComparison(); 
+            return; 
+        }
+        
+        // Render lại thẻ KPI
+        if (finalData.length > 0) renderAllEmployeeCards(finalData);
+    }
+
+    // Cập nhật hàm này để lưu thêm chi tiết nhóm hàng thi đua
+    function saveDailyPerformance(data) {
+        if (data.length === 0) {
+            showToast("Không có dữ liệu hiệu suất để lưu.");
+            return;
+        }
+        
+        try {
+            const historyKey = 'performanceHistory';
+            const today = getTodayDateString();
+            
+            // Lọc dữ liệu cần thiết để lưu chi tiết
+            const simplifiedData = data.map(e => ({
+                id: e.id,
+                name: e.name,
+                rank: e.rank,
+                totalScore: e.totalScore,
+                projectedRevenueCompletion: e.projectedRevenueCompletion,
+                ỂoverallProjectedContestCompletion: e.overallProjectedContestCompletion,
+                // Lưu chi tiết nhóm hàng thi đua
+                contestCompletion: Object.fromEntries(
+                    Object.entries(e.contestCompletion).map(([key, value]) => [
+                        key, 
+                        // SỬA LỖI: LŨY KẾ thực tế được làm tròn thành số nguyên khi lưu
+                        { actual: Math.round(value.actual), projectedPercent: value.projectedPercent } 
+                    ])
+                )
+            }));
+
+            let history = JSON.parse(localStorage.getItem(historyKey) || '{}');
+            history[today] = simplifiedData;
+            localStorage.setItem(historyKey, JSON.stringify(history));
+            showToast(`Đã lưu hiệu suất chi tiết của ngày ${today} (${data.length} nhân viên).`);
+        } catch (error) {
+            console.error("Lỗi khi lưu lịch sử:", error);
+            showToast("Lỗi khi lưu lịch sử vào bộ nhớ cục bộ.");
+        }
+    }
+    
+    function loadHistory() {
+        try {
+            return JSON.parse(localStorage.getItem('performanceHistory') || '{}');
+        } catch (error) {
+            console.error("Lỗi khi đọc lịch sử:", error);
+            return {};
+        }
+    }
+
+    // Bỏ qua hàm showComparisonModal vì không dùng modal nữa
+    
+    function runComparison() {
+        const startDateStr = document.getElementById('comparisonStartDate').value;
+        const endDateStr = document.getElementById('comparisonEndDate').value;
+        const toggleBtn = document.getElementById('toggleComparisonBtn');
+        
+        // Vô hiệu hóa nút toggle trước
+        toggleBtn.style.display = 'none';
+        
+        if (!startDateStr || !endDateStr) {
+            comparisonResultsCache = null;
+            renderAllEmployeeCards(finalData); 
+            return showToast('Vui lòng chọn cả Ngày Bắt đầu và Ngày Kết thúc để hiện So sánh.');
+        }
+        
+        if (startDateStr > endDateStr) {
+             comparisonResultsCache = null;
+             renderAllEmployeeCards(finalData); 
+             return showToast('Ngày Bắt đầu phải nhỏ hơn hoặc bằng Ngày Kết thúc.');
+        }
+
+        const history = loadHistory();
+        const startData = history[startDateStr];
+        let endData;
+        
+        // 1. Lấy dữ liệu ngày kết thúc
+        if (endDateStr === getTodayDateString() && finalData.length > 0) {
+            // Nếu ngày kết thúc là hôm nay, dùng dữ liệu đang có trong bộ nhớ (finalData)
+             endData = finalData.map(e => ({
+                id: e.id,
+                name: e.name,
+                rank: e.rank,
+                totalScore: e.totalScore,
+                projectedRevenueCompletion: e.projectedRevenueCompletion,
+                overallProjectedContestCompletion: e.overallProjectedContestCompletion,
+                contestCompletion: Object.fromEntries(
+                    Object.entries(e.contestCompletion).map(([key, value]) => [
+                        key, 
+                        // LŨY KẾ thực tế được làm tròn khi lưu
+                        { actual: Math.round(value.actual), projectedPercent: value.projectedPercent }
+                    ])
+                )
+            }));
+        } else {
+            // Lấy dữ liệu của ngày kết thúc từ lịch sử
+             endData = history[endDateStr];
+        }
+
+        // 2. Lấy dữ liệu ngày bắt đầu
+        let startDataToUse = startData;
+        
+        // Xử lý trường hợp so sánh 2 ngày trùng nhau
+        if (startDateStr === endDateStr) {
+            startDataToUse = endData; // Dữ liệu bắt đầu = dữ liệu kết thúc
+        }
+        
+        if (!startDataToUse || !endData) {
+            let missingDate = !startDataToUse ? startDateStr : endDateStr;
+            comparisonResultsCache = null;
+            renderAllEmployeeCards(finalData); 
+            return showToast(`Không tìm thấy dữ liệu hiệu suất đã lưu cho ngày ${missingDate}.`);
+        }
+        
+        // Xây dựng map cho dữ liệu bắt đầu
+        const startMap = new Map(startDataToUse.map(e => [e.id, e]));
+
+        // Tạo dữ liệu so sánh (sử dụng dữ liệu kết thúc làm cơ sở)
+        const comparisonResults = endData.map(endEmp => {
+            const startEmp = startMap.get(endEmp.id);
+            if (!startEmp) {
+                return { 
+                    ...endEmp, 
+                    startRank: 'N/A', 
+                    changeScore: 'N/A', 
+                    changeRevenue: 'N/A', 
+                    changeContest: 'N/A',
+                    contestChanges: []
+                };
+            }
+            
+            // Tính toán thay đổi nhóm hàng chi tiết
+            const allContests = new Set([...Object.keys(endEmp.contestCompletion || {}), ...Object.keys(startEmp.contestCompletion || {})]);
+            const contestChanges = Array.from(allContests).map(contest => {
+                // Lấy Lũy kế đã làm tròn từ dữ liệu đã lưu
+                const endActual = endEmp.contestCompletion?.[contest]?.actual || 0;
+                const startActual = startEmp.contestCompletion?.[contest]?.actual || 0;
+                
+                // Lấy chênh lệch LŨY KẾ thực tế (Actual) giữa 2 ngày (sẽ là số nguyên)
+                const change = endActual - startActual; 
+                
+                // Lấy chênh lệch %HT Dự kiến để hiển thị thêm
+                const endProjected = endEmp.contestCompletion?.[contest]?.projectedPercent || 0;
+                const startProjected = startEmp.contestCompletion?.[contest]?.projectedPercent || 0;
+                const changeProjectedPercent = endProjected - startProjected;
+
+
+                return {
+                    name: contest,
+                    changeActual: change, // Chênh lệch Lũy kế (giá trị thực)
+                    changeProjectedPercent: changeProjectedPercent // Chênh lệch % HT Dự kiến (giá trị phần trăm)
+                };
+            }).filter(c => Math.abs(c.changeActual) > 0); // Chỉ quan tâm thay đổi lũy kế thực tế
+            
+            return {
+                ...endEmp,
+                startRank: startEmp.rank,
+                changeScore: endEmp.totalScore - startEmp.totalScore,
+                changeRevenue: endEmp.projectedRevenueCompletion - startEmp.projectedRevenueCompletion,
+                changeContest: endEmp.overallProjectedContestCompletion - startEmp.overallProjectedContestCompletion,
+                contestChanges: contestChanges
+            };
+        }).sort((a, b) => a.rank - b.rank); // Sắp xếp theo rank hiện tại (ngày kết thúc)
+
+        comparisonResultsCache = comparisonResults;
+        
+        // Hiển thị trực tiếp kết quả lên thẻ KPI
+        renderAllEmployeeCards(finalData);
+        
+        // Kích hoạt và đặt lại nút toggle
+        toggleBtn.textContent = 'Ẩn So sánh';
+        toggleBtn.style.backgroundColor = 'var(--danger-color)';
+        toggleBtn.style.display = 'inline-block';
+        
+        showToast(`Đã so sánh hiệu suất từ ${startDateStr} đến ${endDateStr}. Dữ liệu chênh lệch hiển thị trên Thẻ KPI.`);
+    }
+    
+    // Đã loại bỏ renderComparisonTable vì không dùng modal
+
+    function getChangeHtml(value, decimals = 1, isPercent = false) {
+        if (value === 'N/A') return '';
+        
+        const num = parseFloat(value);
+        // Ngưỡng 0.001 được dùng cho giá trị float (phần trăm/điểm). Giá trị đếm (actual) đã được làm tròn thành số nguyên nên chỉ cần check > 0
+        if (isNaN(num) || (!isPercent && num === 0) || (isPercent && Math.abs(num) < 0.001)) return ''; 
+
+        const absValue = Math.abs(num);
+        let icon = '';
+        let className = '';
+        const suffix = isPercent ? '%' : '';
+        
+        
+        if (num > 0) {
+            icon = '▲';
+            className = 'change-up';
+        } else if (num < 0) {
+            icon = '▼';
+            className = 'change-down';
+        }
+        
+        // QUAN TRỌNG: Giá trị lũy kế thực tế (không phải phần trăm) sẽ được làm tròn 0 chữ số thập phân và dùng formatNumberFull
+        const displayDecimals = isPercent ? decimals : 0;
+        // Giá trị lũy kế (actual) đã được làm tròn trong quá trình lưu, nên chỉ cần format lại cho dễ đọc
+        const displayValue = isPercent ? absValue.toFixed(displayDecimals) : formatNumberFull(Math.round(absValue), 0);
+        
+        return `<span class="comparison-change ${className}" style="margin-left: 5px;">${icon} ${displayValue}${suffix}</span>`;
+    }
+
+    // Hàm xác định lớp màu dựa trên phần trăm
+    function getPercentColorClass(percent) {
+        if (percent >= 100) return 'text-success';
+        if (percent >= 80) return 'text-warning';
+        return 'text-danger';
+    }
+
+
+    // --- XỬ LÝ DỮ LIỆU CHÍNH ---
+    function processData(skipHeaderExtraction = false) {
+        try {
+            // 1. Lấy và xác thực đầu vào
+            const inputs = {
+                data7: document.getElementById('dataInput7').value,
+                data6: document.getElementById('dataInput6').value,
+                data2: document.getElementById('dataInput2').value,
+                storeTarget: parseFloat(document.getElementById('storeTargetInput').value.replace(/,/g, '')) || 0,
+                isAllInOne: true,
+            };
+            if (!inputs.data7 || !inputs.data6 || !inputs.data2 || isNaN(inputs.storeTarget)) throw new Error("Vui lòng nhập đủ dữ liệu và target siêu thị.");
+
+            // 2. Phân tích dữ liệu để lấy ALL contest headers (CHỈ LÀM LẦN ĐẦU)
+            if (!skipHeaderExtraction || allContestHeadersGlobal.length === 0) {
+                const lines7 = inputs.data7.split('\n').filter(line => line.trim());
+                const subHeaderIndex7 = lines7.findIndex(line => line.trim().startsWith('SLLK'));
+                let allHeaders = lines7.slice(1, subHeaderIndex7).map(h => h.trim()).filter(Boolean);
+                
+                const invalidHeaderKeywords = ['DTLK', 'SLLK', 'Tổng', 'BP All In One', 'Nguyễn', 'Bùi', 'Dương', 'Đỗ', 'Trần', 'Lê', 'Phạm', 'Hoàng', 'Phan', 'Vũ', 'Đặng', 'Thị'];
+                allContestHeadersGlobal = allHeaders.filter(header => {
+                    return !invalidHeaderKeywords.some(keyword => header.includes(keyword));
+                });
+
+                // Nếu là lần đầu, gán selectedContestHeaders = allContestHeadersGlobal (Hiển thị tất cả)
+                if (selectedContestHeaders.length === 0 || selectedContestHeaders.length === allContestHeadersGlobal.length) {
+                    selectedContestHeaders = [...allContestHeadersGlobal];
+                    localStorage.setItem('selectedContestHeaders', JSON.stringify(selectedContests));
+                }
+            }
+            
+            // 3. Áp dụng bộ lọc ngành hàng đã chọn
+            let finalContestHeaders;
+            const isAllSelected = document.getElementById('allContestsCheckbox').checked;
+            
+            if (isAllSelected) {
+                finalContestHeaders = [...allContestHeadersGlobal];
+            } else {
+                finalContestHeaders = allContestHeadersGlobal.filter(header => selectedContestHeaders.includes(header));
+            }
+            
+            if (finalContestHeaders.length === 0 && allContestHeadersGlobal.length > 0) {
+                showToast("Không có ngành hàng nào được chọn. Vui lòng chọn ngành hàng.");
+                updateContestStatusUI(); 
+                return; 
+            }
+            
+            // Tiếp tục phân tích dữ liệu nhân viên (Bảng 7)
+            const lines7 = inputs.data7.split('\n').filter(line => line.trim());
+            const subHeaderIndex7 = lines7.findIndex(line => line.trim().startsWith('SLLK'));
+            const fullHeaders = lines7.slice(1, subHeaderIndex7).map(h => h.trim()).filter(Boolean);
+            const fullHeaderMap = fullHeaders.reduce((map, header, index) => {
+                map[header] = index;
+                return map;
+            }, {});
+
+            const employeeMap = new Map();
+            lines7.slice(subHeaderIndex7 + 1).forEach(row => {
+                const cells = row.split('\t');
+                const nameId = (cells[0] || '').trim();
+                
+                if (nameId.includes(' - ')) {
+                    const nameOnly = nameId.split(' - ')[0].trim();
+                    const invalidNames = ['PHỤ KIỆN', 'TỔNG', 'TỔNG CỘNG'];
+                    if (invalidNames.includes(nameOnly.toUpperCase())) { return; }
+                    
+                    const group = 'all'; 
+                    const sales = {};
+                    allContestHeadersGlobal.forEach(header => {
+                        const index = fullHeaderMap[header];
+                         sales[header.trim()] = parseFloat(String(cells[index + 1] || '0').replace(/,/g, '')) || 0;
+                    });
+                    employeeMap.set(nameId, { name: nameOnly, id: nameId, group, sales });
+                }
+            });
+
+            // Phân tích Target Cửa hàng (Bảng 2)
+            const contestTargetsStore = {};
+            const contestStoreStats = {};
+            const lines2 = inputs.data2.split('\n').filter(line => line.trim());
+            if (lines2.length > 1) {
+                const headers2 = lines2.shift().split('\t').map(h => h.trim());
+                const nameIndex2 = headers2.findIndex(h => h.includes('Ngành hàng'));
+                const dtqdIndex2 = headers2.findIndex(h => h === 'DTQĐ');
+                const targetIndex2 = headers2.findIndex(h => h === 'Target');
+                const projectedIndex2 = headers2.findIndex(h => h.includes('% HT Dự Kiến'));
+
+                if (nameIndex2 !== -1 && dtqdIndex2 !== -1 && targetIndex2 !== -1 && projectedIndex2 !== -1) {
+                    lines2.forEach(row => {
+                        const cells = row.split('\t');
+                        const categoryName = (cells[nameIndex2] || '').trim();
+                        if (allContestHeadersGlobal.includes(categoryName)) { 
+                            const target = parseFloat(cells[targetIndex2].replace(/,/g, '')) || 0;
+                            const actual = parseFloat(cells[dtqdIndex2].replace(/,/g, '')) || 0;
+                            const projected = parseFloat(String(cells[projectedIndex2]).replace(/%/g, '')) || 0;
+                            contestTargetsStore[categoryName] = target;
+                            contestStoreStats[categoryName] = { actual, target, projectedPercentFromSource: projected };
+                        }
+                    });
+                }
+            }
+            
+            // 4. Tính toán Target và chỉ số cho từng nhân viên
+            const targetMap = new Map();
+            const mode = document.querySelector('input[name="targetMode"]:checked').value;
+            const storeTarget = inputs.storeTarget;
+            const activeEmployees = detectedEmployees.filter(e => e.checked);
+            const activeCount = activeEmployees.length;
+            const evenValue = activeCount > 0 ? storeTarget / activeCount : 0;
+
+            detectedEmployees.forEach(emp => {
+                if (emp.checked) {
+                    let val = 0;
+                    if (mode === 'even') { val = evenValue; } else { val = storeTarget * (emp.percent / 100); }
+                    targetMap.set(emp.id, val);
+                } else {
+                    targetMap.set(emp.id, 0);
+                }
+            });
+
+            // Áp dụng Target vào employeeMap
+            employeeMap.forEach(employee => {
+                employee.revenueTarget = targetMap.get(employee.id) || 0;
+                employee.contestTargets = {};
+                finalContestHeaders.forEach(h => {
+                     if (contestTargetsStore[h]) {
+                        if (targetMap.get(employee.id) > 0) {
+                             // Chia đều target nhóm theo số nhân viên được chọn
+                             employee.contestTargets[h] = Math.ceil(contestTargetsStore[h] / activeCount); 
+                        } else {
+                             employee.contestTargets[h] = 0;
+                        }
+                    }
+                });
+            });
+
+            // Lấy DTQD thực tế (Bảng 6)
+            const lines6 = inputs.data6.split('\n').filter(line => line.trim());
+            if (lines6.length > 1) {
+                const headers6 = lines6.shift().split('\t').map(h => h.trim());
+                const nameIndex6 = headers6.findIndex(h => h.includes('viên'));
+                const dtqdIndex6 = headers6.findIndex(h => h === 'DTQĐ');
+                employeeMap.forEach((employee, nameId) => {
+                    const row6 = lines6.find(r => (r.split('\t')[nameIndex6] || '').trim() === nameId);
+                    employee.actual_DTQD = (row6) ? parseFloat((row6.split('\t')[dtqdIndex6] || '0').replace(/,/g, '')) || 0 : 0;
+                });
+            } else {
+                 employeeMap.forEach(e => e.actual_DTQD = 0);
+            }
+            
+            const currentMonthTimeframe = getContestTimeframe('');
+            finalData = []; 
+            const totalSelectedContests = finalContestHeaders.length;
+            
+            employeeMap.forEach(employee => {
+                employee.revenueCompletion = employee.revenueTarget > 0 ? (employee.actual_DTQD / employee.revenueTarget) * 100 : 0;
+                employee.projectedRevenueCompletion = employee.revenueTarget > 0 ? (employee.actual_DTQD / currentMonthTimeframe.passedDays * currentMonthTimeframe.totalDays) / employee.revenueTarget * 100 : 0;
+                
+                employee.contestCompletion = {};
+                employee.projectedCompletedContests = 0;
+                
+                finalContestHeaders.forEach(key => {
+                    const timeframe = getContestTimeframe(key);
+                    const target = employee.contestTargets[key] || 0;
+                    const actual = employee.sales[key] || 0;
+                    const percent = target > 0 ? (actual / target) * 100 : 0;
+                    const projectedPercent = target > 0 ? (actual / timeframe.passedDays * timeframe.totalDays) / target * 100 : 0;
+                    employee.contestCompletion[key] = { target, actual, percent, projectedPercent };
+                    if (projectedPercent >= 100) employee.projectedCompletedContests++;
+                });
+                
+                // SỬA LỖI: Chỉ tính Completion dựa trên số lượng Ngành hàng ĐÃ CHỌN (finalContestHeaders.length)
+                employee.overallProjectedContestCompletion = totalSelectedContests > 0 ? (employee.projectedCompletedContests / totalSelectedContests) * 100 : 0;
+                const contestScore = employee.overallProjectedContestCompletion;
+                const revenueScore = employee.projectedRevenueCompletion;
+                employee.totalScore = revenueScore + contestScore;
+                
+                if (detectedEmployees.some(e => e.id === employee.id)) {
+                     finalData.push(employee);
+                }
+            });
+            
+            finalData.sort((a,b) => b.totalScore - a.totalScore);
+            finalData.forEach((employee, index) => { employee.rank = index + 1; });
+            
+            const contestProjectedTotals = {};
+            finalContestHeaders.forEach(header => {
+                const stat = contestStoreStats[header];
+                contestProjectedTotals[header] = stat ? stat.projectedPercentFromSource : 0;
+            });
+            
+            sortedContestHeadersGlobal = [...finalContestHeaders].sort((a, b) => {
+                return (contestProjectedTotals[b] || 0) - (contestProjectedTotals[a] || 0);
+            });
+
+            updateContestStatusUI();
+            renderUI(finalData, sortedContestHeadersGlobal, currentMonthTimeframe, contestProjectedTotals);
+            
+            Object.keys(inputs).forEach(key => {
+                const el = document.getElementById({data7: 'dataInput7', data6: 'dataInput6', data2: 'dataInput2', storeTarget: 'storeTargetInput'}[key]);
+                if(el) localStorage.setItem(el.id, el.value);
+            });
+            
+            // TỰ ĐỘNG LƯU DỮ LIỆU HIỆU SUẤT VÀO LỊCH SỬ
+            saveDailyPerformance(finalData);
+
+        } catch (error) {
+            showToast(`Đã xảy ra lỗi: ${error.message}`);
+            console.error("Data processing error:", error);
+        }
+    }
+
+    // --- HIỂN THỊ GIAO DIỆN ---
+    function renderUI(data, headers, timeframe, projectedTotals) {
+        document.getElementById('data-input-card').style.display = 'none';
+        document.getElementById('report-header').style.display = 'flex';
+        document.getElementById('results-wrapper').style.display = 'block';
+        document.getElementById('comments-card').style.display = 'block';
+        document.getElementById('kpi-cards-section').style.display = 'block';
+        
+        const today = new Date();
+        document.getElementById('reportTitle').textContent = `Báo cáo đánh giá nhân viên đến ngày ${today.toLocaleDateString('vi-VN')}`;
+        document.getElementById('month-progress-container').innerHTML = `
+            <div class="progress-bar-wrapper" style="margin-top:0;">
+                <div class="progress-bar-label"><span>Tiến độ Tháng</span><span>${(timeframe.passedDays / timeframe.totalDays * 100).toFixed(1)}%</span></div>
+                <div class="progress-bar-bg" style="height:12px;"><div class="progress-bar-fill" style="width: ${(timeframe.passedDays / timeframe.totalDays * 100)}%;"></div></div>
+            </div>`;
+        document.getElementById('month-progress-container').style.display = 'block';
+
+        renderComprehensiveDashboard(data, headers, projectedTotals);
+        renderStramAnalysis(data);
+        // Khi render UI, reset comparison cache and render
+        comparisonResultsCache = null;
+        renderAllEmployeeCards(data);
+        
+        // Ẩn nút toggle so sánh khi mới load báo cáo
+        document.getElementById('toggleComparisonBtn').style.display = 'none';
+
+        // GỌI HÀM RENDER COMMENT MỚI
+        renderCommentsBox(data);
+    }
+    
+    // Tìm kiếm dữ liệu so sánh trong cache
+    function getComparisonData(employeeId) {
+        if (!comparisonResultsCache) return null;
+        return comparisonResultsCache.find(r => r.id === employeeId);
+    }
+
+    function renderComprehensiveDashboard(data, headers, projectedTotals) {
+        // ... (Không thay đổi)
+        const container = document.getElementById('comprehensiveLeaderboardContainer');
+        const totalDisplayedContests = headers.length; 
+        
+        let tableHtml = `
+            <table class="comprehensive-table">
+                <thead>
+                    <tr>
+                        <th>Hạng</th>
+                        <th>Nhân viên</th>
+                        <th>Điểm</th>
+                        <th>Số ngành HT (DK/${totalDisplayedContests})</th>
+                        <th>Tiến độ DT</th>`;
+        headers.forEach((h, index) => {
+            const projectedTotal = projectedTotals[h] || 0;
+            tableHtml += `<th class="contest-header-cell">
+                            <a href="#" class="clickable-header" onclick="showContestDetailsPopup('${encodeURIComponent(h)}', event)">${index + 1}. ${h}</a>
+                            <div style="color: ${projectedTotal >= 100 ? 'var(--success-color)' : 'var(--danger-color)'};">${projectedTotal.toFixed(1)}%</div>
+                        </th>`;
+        });
+        tableHtml += `</tr></thead><tbody>`;
+
+        const total = data.length;
+        data.forEach(e => {
+            let rankIcon = '';
+            if (e.rank === 1) rankIcon = '🥇';
+            else if (e.rank === 2) rankIcon = '🥈';
+            else if (e.rank === 3) rankIcon = '🥉';
+            else if (total > 3 && e.rank >= total - 2) rankIcon = '🔴';
+            const rankDisplay = rankIcon ? `<span class="rank-icon">${rankIcon}</span>` : e.rank;
+
+            const revenueCompletionCapped = Math.min(100, e.revenueCompletion);
+            
+            // Lấy dữ liệu so sánh cho bảng tổng hợp
+            const compData = getComparisonData(e.id);
+            // Cập nhật để hiển thị chênh lệch điểm tổng
+            const scoreDisplay = compData 
+                ? `${e.totalScore.toFixed(1)} ${getChangeHtml(compData.changeScore, 1)}`
+                : e.totalScore.toFixed(1);
+
+
+            tableHtml += `<tr>
+                <td class="rank-cell">${rankDisplay}</td>
+                <td><a href="#" class="clickable-name" onclick="showEmployeeDetailsPopup('${e.id}', event)">${abbreviateName(e.name)}</a></td>
+                <td style="font-weight: 700;">${scoreDisplay}</td>
+                <td style="font-weight: 700;">${e.projectedCompletedContests}/${totalDisplayedContests}</td>
+                <td>
+                    <div class="progress-bar-wrapper">
+                         <div class="progress-bar-label">
+                            <span>${e.revenueCompletion.toFixed(1)}%</span>
+                            <span>${formatNumberFull(e.actual_DTQD, 0)} / ${formatNumberFull(e.revenueTarget, 0)}</span>
+                        </div>
+                        <div class="progress-bar-bg">
+                            <div class="progress-bar-fill ${e.revenueCompletion >= 100 ? 'success' : ''}" style="width: ${revenueCompletionCapped}%;"></div>
+                        </div>
+                    </div>
+                </td>`;
+
+            headers.forEach(h => {
+                const item = e.contestCompletion[h] || { projectedPercent: 0 };
+                let badgeClass = '';
+                if (item.projectedPercent >= 100) {
+                    badgeClass = 'badge-green';
+                } else {
+                    badgeClass = 'badge-red';
+                }
+                tableHtml += `<td class="heatmap-cell"><span class="percent-badge ${badgeClass}">${item.projectedPercent.toFixed(1)}%</span>`;
+            });
+
+            tableHtml += `</tr>`;
+        });
+        container.innerHTML = tableHtml + '</tbody></table>';
+    }
+    
+    function showEmployeeDetailsPopup(employeeId, event) {
+        event.preventDefault(); 
+        const employeeData = finalData.find(emp => emp.id === employeeId);
+        if (employeeData) {
+            const contestData = Object.entries(employeeData.contestCompletion)
+                                    .filter(([name]) => sortedContestHeadersGlobal.includes(name))
+                                    .sort(([, a], [, b]) => b.projectedPercent - a.projectedPercent);
+
+            // Lấy dữ liệu so sánh chi tiết nhóm hàng
+            const compData = getComparisonData(employeeId);
+            const contestChangeMap = compData ? new Map(compData.contestChanges.map(c => [c.name, c.changeActual])) : null;
+            const contestChangeProjectedMap = compData ? new Map(compData.contestChanges.map(c => [c.name, c.changeProjectedPercent])) : null;
+
+
+            let tableHtml = `
+                <div class="card" style="margin:0; box-shadow: none; border: none;">
+                    <h3 style="margin-top:0; color: var(--primary-color);">Chi tiết Thi đua: ${employeeData.name}</h3>
+                    <div class="table-container" style="margin-top:15px; max-height: 60vh;">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Ngành hàng</th>
+                                    <th>Lũy kế</th>
+                                    <th>Target</th>
+                                    <th>% HT</th>
+                                    <th>% HT Dự kiến</th>
+                                    ${compData ? '<th>Thay đổi Lũy kế</th>' : ''}
+                                    ${compData ? '<th>Thay đổi % HT DK</th>' : ''}
+                                </tr>
+                            </thead>
+                            <tbody>`;
+            
+            contestData.forEach(([name, data]) => {
+                const globalIndex = sortedContestHeadersGlobal.findIndex(h => h === name);
+                
+                const percentClass = getPercentColorClass(data.percent);
+                const projectedClass = getPercentColorClass(data.projectedPercent);
+
+
+                const changeActualCellHtml = compData ? `<td style="font-weight: 700;">${getChangeHtml(contestChangeMap.get(name) || 0, 0)}</td>` : '';
+                const changeProjectedCellHtml = compData ? `<td style="font-weight: 700;">${getChangeHtml(contestChangeProjectedMap.get(name) || 0, 1, true)}</td>` : '';
+
+                tableHtml += `
+                    <tr>
+                        <td style="font-weight:bold;">${globalIndex + 1}</td>
+                        <td>${name}</td>
+                        <td>${formatNumberFull(data.actual, 2)}</td>
+                        <td>${formatNumberFull(data.target, 0)}</td>
+                        <td class="${percentClass}">${data.percent.toFixed(0)}%</td>
+                        <td class="${projectedClass}">${data.projectedPercent.toFixed(1)}%</td>
+                        ${changeActualCellHtml}
+                        ${changeProjectedCellHtml}
+                    </tr>`;
+            });
+            tableHtml += `</tbody></table></div></div>`;
+            document.getElementById('modal-body').innerHTML = tableHtml;
+            document.getElementById('kpi-modal').style.display = 'block';
+        }
+    }
+    
+    function showContestDetailsPopup(contestName, event) {
+        event.preventDefault();
+        const decodedContestName = decodeURIComponent(contestName);
+        if (!sortedContestHeadersGlobal.includes(decodedContestName)) return showToast(`Ngành hàng "${decodedContestName}" hiện không được hiển thị/chọn để theo dõi.`);
+
+        const sortedByContest = [...finalData].sort((a, b) => {
+            const perfA = a.contestCompletion[decodedContestName]?.projectedPercent || 0;
+            const perfB = b.contestCompletion[decodedContestName]?.projectedPercent || 0;
+            return perfB - perfA;
+        });
+
+        // Lấy dữ liệu so sánh toàn bộ
+        const comparisonDataAll = comparisonResultsCache;
+
+        let tableHtml = `
+            <div class="card" style="margin:0; box-shadow: none; border: none;">
+                <h3 style="margin-top:0; color: var(--primary-color);">Xếp hạng Ngành hàng: ${decodedContestName}</h3>
+                <div class="table-container" style="margin-top:15px;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Hạng</th>
+                                <th>Nhân viên</th>
+                                <th>Lũy kế</th>
+                                ${comparisonDataAll ? '<th>Thay đổi Lũy kế</th>' : ''}
+                                <th>Target</th>
+                                <th>% HT</th>
+                                <th>% HT Dự kiến</th>
+                                ${comparisonDataAll ? '<th>Thay đổi % HT DK</th>' : ''}
+                            </tr>
+                        </thead>
+                        <tbody>`;
+        
+        sortedByContest.forEach((employee, index) => {
+            const item = employee.contestCompletion[decodedContestName] || { actual: 0, target: 0, percent: 0, projectedPercent: 0 };
+            
+            const percentClass = getPercentColorClass(item.percent);
+            const projectedClass = getPercentColorClass(item.projectedPercent);
+
+            // Xử lý dữ liệu so sánh cho từng nhân viên
+            let changeActualCellHtml = '';
+            let changeProjectedCellHtml = '';
+            
+            if (comparisonDataAll) {
+                 const compEmp = comparisonDataAll.find(e => e.id === employee.id);
+                 if (compEmp) {
+                    const compChange = compEmp.contestChanges.find(c => c.name === decodedContestName);
+                    if (compChange) {
+                        changeActualCellHtml = `<td style="font-weight: 700;">${getChangeHtml(compChange.changeActual, 0)}</td>`;
+                        changeProjectedCellHtml = `<td style="font-weight: 700;">${getChangeHtml(compChange.changeProjectedPercent, 1, true)}</td>`;
+                    } else {
+                        changeActualCellHtml = `<td></td>`;
+                        changeProjectedCellHtml = `<td></td>`;
+                    }
+                 } else {
+                    changeActualCellHtml = `<td></td>`;
+                    changeProjectedCellHtml = `<td></td>`;
+                 }
+            }
+
+            
+            tableHtml += `
+                <tr>
+                    <td class="rank-cell">${index + 1}</td>
+                    <td>${employee.name}</td>
+                    <td>${formatNumberFull(item.actual, 2)}</td>
+                    ${changeActualCellHtml}
+                    <td>${formatNumberFull(item.target, 0)}</td>
+                    <td class="${percentClass}">${item.percent.toFixed(0)}%</td>
+                    <td class="${projectedClass}">${item.projectedPercent.toFixed(1)}%</td>
+                    ${changeProjectedCellHtml}
+                </tr>`;
+        });
+        
+        tableHtml += `</tbody></table></div></div>`;
+        document.getElementById('modal-body').innerHTML = tableHtml; 
+        document.getElementById('kpi-modal').style.display = 'block';
+    }
+
+    // Cập nhật hàm này để nhận và sử dụng dữ liệu so sánh
+    function renderAllEmployeeCards(data) {
+        document.getElementById('allCardsContainer').innerHTML = data.map(employee => {
+            const comparisonData = getComparisonData(employee.id);
+            return getEmployeeCardHtml(employee, data.length, comparisonData);
+        }).join('');
+    }
+
+    function getMotivationalQuote(rank, total) {
+        if (rank === 1) return "Dẫn đầu cuộc đua, tuyệt vời!";
+        if (rank <= 3) return "Vị trí top đầu, giữ vững phong độ!";
+        if (rank <= Math.ceil(total * 0.6)) return "Cố gắng bứt phá top đầu nào!";
+        return "Nỗ lực hơn để cải thiện thứ hạng!";
+    }
+
+    // Thêm tham số comparisonData
+    function getEmployeeCardHtml(employee, total, comparisonData = null) {
+        const revenueActual = employee.actual_DTQD || 0;
+        const revenueTarget = employee.revenueTarget || 0;
+        const revenueRemaining = revenueTarget - revenueActual;
+        const totalDisplayedContests = sortedContestHeadersGlobal.length; 
+        const timeframe = getContestTimeframe('');
+        const revenueTodayTarget = (revenueRemaining > 0) ? revenueRemaining / (timeframe.totalDays - timeframe.passedDays + 1) : 0;
+        
+        const revenueCompletionCapped = Math.min(100, employee.revenueCompletion);
+        const contestCompletionCapped = Math.min(100, employee.overallProjectedContestCompletion);
+        
+        let rankIcon = '';
+        if (employee.rank === 1) rankIcon = '🥇 ';
+        else if (employee.rank === 2) rankIcon = '🥈 ';
+        else if (employee.rank === 3) rankIcon = '🥉 ';
+        else if (total > 3 && employee.rank >= total - 2) rankIcon = '🔴 ';
+        
+        const remainingRevenueCell = revenueRemaining <= 0 ? `<span class="value">✅</span>` : `<span class="value">${formatNumberFull(revenueRemaining, 0)}</span>`;
+
+        const avatarSvg = `<svg width="60" height="60" xmlns="http://www.w3.org/2000/svg"><circle cx="30" cy="30" r="27" fill="#ccc" stroke="white" stroke-width="3"/><text x="50%" y="50%" dy=".1em" dominant-baseline="central" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="${getInitials(employee.name).length > 1 ? '24' : '28'}" fill="#fff" font-weight="bold">${getInitials(employee.name)}</text></svg>`;
+
+        // Dữ liệu so sánh chi tiết nhóm hàng
+        let comparisonSummaryHtml = '';
+        // Bỏ phần tóm tắt so sánh khỏi thẻ KPI
+        
+        const contestTableBody = Object.entries(employee.contestCompletion)
+            .filter(([name]) => sortedContestHeadersGlobal.includes(name))
+            .sort((a,b) => b[1].projectedPercent - a[1].projectedPercent)
+            .map(([category, data], index) => {
+                const contestTimeframe = getContestTimeframe(category);
+                const remainingDays = contestTimeframe.totalDays - contestTimeframe.passedDays + 1;
+                const todayTarget = (data.target - data.actual > 0 && remainingDays > 0) ? (data.target - data.actual) / remainingDays : 0;
+                const targetTodayCell = data.projectedPercent >= 100 ? `<td class="icon-cell">🏆</td>` : `<td>${formatNumberFull(todayTarget, 2)}</td>`;
+                const remaining = data.target - data.actual;
+                const remainingCell = remaining <= 0 ? `<td class="icon-cell">✅</td>` : `<td>${formatNumberFull(remaining, 2)}</td>`;
+                
+                // Lấy so sánh lũy kế (nếu có)
+                let changeActualHtml = '';
+                if (comparisonData) {
+                    const changeData = comparisonData.contestChanges.find(c => c.name === category);
+                    if (changeData) {
+                        // Lấy giá trị chênh lệch lũy kế (đã là số nguyên)
+                        changeActualHtml = getChangeHtml(changeData.changeActual, 0, false); 
+                    }
+                }
+                
+                const percentClass = getPercentColorClass(data.percent);
+                const projectedClass = getPercentColorClass(data.projectedPercent);
+
+                
+                // SỬA LỖI: Đặt nội dung hiển thị trong thẻ span để tránh lỗi đường kẻ bị lệch
+                const actualDisplay = `<span style="display: flex; align-items: center; justify-content: center; width: 100%; gap: 5px;">
+                                        ${formatNumberFull(data.actual, 2)}
+                                        ${changeActualHtml}
+                                      </span>`;
+                
+                return `<tr>
+                    <td>${index + 1}</td>
+                    <td>${category}</td>
+                    ${targetTodayCell}
+                    <td>${formatNumberFull(data.target, 0)}</td>
+                    <td class="kpi-actual">${actualDisplay}</td>
+                    ${remainingCell}
+                    <td class="${percentClass}">${data.percent.toFixed(0)}%</td>
+                    <td class="${projectedClass}">${data.projectedPercent.toFixed(1)}%</td>
+                </tr>`
+            }).join('');
+
+        const scoreChangeDisplay = comparisonData ? getChangeHtml(comparisonData.changeScore, 1) : '';
+        const revenueChangeDisplay = comparisonData ? getChangeHtml(comparisonData.changeRevenue, 1, true) : '';
+        const contestChangeDisplay = comparisonData ? getChangeHtml(comparisonData.changeContest, 1, true) : '';
+
+
+        return `<div class="perf-card">
+                    <div class="perf-header">
+                        <div class="perf-avatar">${avatarSvg}</div>
+                        <div class="name-block">
+                            <h2>${abbreviateName(employee.name)}</h2>
+                            <p class="perf-quote">${getMotivationalQuote(employee.rank, total)}</p>
+                        </div>
+                        <div class="rank-block">
+                            <h3>${rankIcon}HẠNG ${employee.rank}</h3>
+                            <p style="margin: 0; font-size: 13px;">Điểm: ${employee.totalScore.toFixed(1)} ${scoreChangeDisplay}</p>
+                        </div>
+                    </div>
+                    <div class="perf-body">
+                         ${comparisonSummaryHtml}
+                         <div class="progress-bar-wrapper" style="margin-top: 15px;">
+                            <div class="progress-bar-label">
+                                <span>Tiến độ Doanh thu ${revenueChangeDisplay}</span>
+                                <span class="progress-data">${formatNumberFull(revenueActual, 0)} / ${formatNumberFull(revenueTarget, 0)}</span>
+                                <span class="${getPercentColorClass(employee.revenueCompletion)}">${employee.revenueCompletion.toFixed(1)}%</span>
+                            </div>
+                            <div class="progress-bar-bg"><div class="progress-bar-fill ${employee.revenueCompletion >= 100 ? 'success' : ''}" style="width: ${revenueCompletionCapped}%;"></div></div>
+                        </div>
+                        <div class="progress-bar-wrapper">
+                            <div class="progress-bar-label">
+                                <span>Tiến độ Thi đua ${contestChangeDisplay}</span>
+                                <span class="progress-data">${employee.projectedCompletedContests} / ${totalDisplayedContests} Nhóm</span>
+                                <span class="${getPercentColorClass(employee.overallProjectedContestCompletion)}">${employee.overallProjectedContestCompletion.toFixed(1)}%</span>
+                            </div>
+                            <div class="progress-bar-bg"><div class="progress-bar-fill ${employee.overallProjectedContestCompletion >= 100 ? 'success' : ''}" style="width: ${contestCompletionCapped}%;"></div></div>
+                        </div>
+                        <div class="progress-bar-group">
+                            <div><div class="label">🎯 Target DT</div><span class="value">${formatNumberFull(revenueTarget, 0)}</span></div>
+                            <div><div class="label">📈 Lũy kế DT</div><span class="value">${formatNumberFull(revenueActual, 0)}</span></div>
+                            <div><div class="label">📉 DT Còn lại</div>${remainingRevenueCell}</div>
+                            <div><div class="label">🔮 Dự kiến HT</div><span class="value">${employee.projectedRevenueCompletion.toFixed(0)}%</span></div>
+                            <div><div class="label">📅 M.tiêu DT</div><span class="value">${formatNumberFull(revenueTodayTarget, 0)}</span></div>
+                        </div>
+                         <div class="contest-table-container" style="margin-top: 15px;">
+                            <h3 style="font-size:1.1em;">Thi đua ngành hàng (Dự kiến HT: ${employee.projectedCompletedContests}/${totalDisplayedContests})</h3>
+                            <table class="contest-table">
+                                <thead><tr><th>#</th><th>Ngành hàng</th><th>M.tiêu Ngày</th><th>Target</th><th>Lũy kế</th><th>Còn lại</th><th>% HT</th><th>% HT Dự kiến</th></tr></thead>
+                                <tbody>${contestTableBody}</tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>`;
+    }
+
+    // SỬA LỖI: SỬ DỤNG sortedContestHeadersGlobal.length CHO TỔNG SỐ NGÀNH HÀNG
+    function renderCommentsBox(data) {
+        if (!data || data.length === 0) return;
+        // Lấy số lượng ngành hàng đang được hiển thị/lọc
+        const totalDisplayedContests = sortedContestHeadersGlobal.length; 
+        const total = data.length;
+        const comments = data.map(e => {
+            let icon = '';
+            if (e.rank === 1) icon = '🥇 ';
+            else if (e.rank === 2) icon = '🥈 ';
+            else if (e.rank === 3) icon = '🥉 ';
+            // Kiểm tra 3 người cuối bảng
+            else if (total > 3 && e.rank >= total - 2) icon = '🔴 ';
+            return `${icon}Top ${e.rank} - ${abbreviateName(e.name)}: ⭐ ${e.totalScore.toFixed(1)} điểm | 💰 DT: ${formatNumberFull(e.actual_DTQD, 0)} | ✅ HT ${e.projectedCompletedContests}/${totalDisplayedContests} nhóm.`;
+        }).join('\n');
+        document.getElementById('comments-textarea').value = comments;
+    }
+    
+    // --- CODE ĐÃ XÓA: HÀM RENDER INFOGRAPHIC KHÔNG CÒN TỒN TẠI ---
+    
+    // --- STRAM FUNCTIONS (Đã khôi phục) ---
+    function getOverallDevelopmentLevel(revenuePercent, contestPercent) {
+        const highNangLuc = revenuePercent >= 95;
+        const highCamKet = contestPercent >= 80;
+
+        if (highNangLuc && highCamKet) {
+            return { dLevel: 'D4', sLevel: 'S4', description: 'Năng lực cao, Cam kết cao. (Người tự lực, đạt thành tựu)', nangLuc: `Cao (${revenuePercent.toFixed(1)}%)`, camKet: `Cao (${contestPercent.toFixed(1)}%)`, revenuePercent: revenuePercent, overallProjectedContestCompletion: contestPercent };
+        } else if (highNangLuc && !highCamKet) {
+            return { dLevel: 'D3', sLevel: 'S3', description: 'Năng lực cao, Cam kết thay đổi. (Có khả năng, nhưng thận trọng)', nangLuc: `Cao (${revenuePercent.toFixed(1)}%)`, camKet: `Thấp (${contestPercent.toFixed(1)}%)`, revenuePercent: revenuePercent, overallProjectedContestCompletion: contestPercent };
+        } else if (!highNangLuc && highCamKet) {
+            return { dLevel: 'D1', sLevel: 'S1', description: 'Năng lực thấp, Cam kết cao. (Người mới, nhiệt tình)', nangLuc: `Thấp (${revenuePercent.toFixed(1)}%)`, camKet: `Cao (${contestPercent.toFixed(1)}%)`, revenuePercent: revenuePercent, overallProjectedContestCompletion: contestPercent };
+        } else {
+            return { dLevel: 'D2', sLevel: 'S2', description: 'Năng lực thấp, Cam kết thấp. (Người học, vỡ mộng)', nangLuc: `Thấp (${revenuePercent.toFixed(1)}%)`, camKet: `Thấp (${contestPercent.toFixed(1)}%)`, revenuePercent: revenuePercent, overallProjectedContestCompletion: contestPercent };
+        }
+    }
+
+    function getTaskDevelopmentLevel(projectedPercent) {
+        if (projectedPercent >= 100) {
+            return { dLevel: 'D4', sLevel: 'S4', description: 'Tự lực đạt thành tựu. (Năng lực cao, Cam kết cao)' };
+        } else if (projectedPercent >= 80) {
+            return { dLevel: 'D3', sLevel: 'S3', description: 'Có khả năng nhưng thận trọng. (Năng lực cao, Cam kết thay đổi)' };
+        } else if (projectedPercent >= 50) {
+            return { dLevel: 'D1', sLevel: 'S1', description: 'Nhiệt tình, cần chỉ dẫn. (Năng lực thấp, Cam kết cao)' };
+        } else {
+            return { dLevel: 'D2', sLevel: 'S2', description: 'Vỡ mộng, cần huấn luyện. (Năng lực thấp, Cam kết thấp)' };
+        }
+    }
+    
+    function getLeadershipStyleInfo(sLevel) {
+        switch (sLevel) {
+            case 'S1':
+                return { title: 'S1: Chỉ đạo (Hành vi chỉ đạo cao, hỗ trợ thấp)', chuDich: 'Giúp nhân viên phát triển năng lực.', bangCach: [ 'Ghi nhận các kỹ năng có thể chuyển giao/học cam kết.', 'Đưa ra chỉ đạo về công việc, cách làm và thời điểm hoàn thành.', 'Kiểm tra thường xuyên.' ] };
+            case 'S2':
+                return { title: 'S2: Huấn luyện (Hành vi chỉ đạo cao, hỗ trợ cao)', chuDich: 'Xốc tinh thần và chỉ dạy lại.', bangCach: [ 'Quan tâm đến họ và khích lệ họ.', 'Giải thích vì sao.', 'Chỉ đạo và hướng dẫn lại.', 'Cho họ cùng tham gia giải quyết vấn đề.' ] };
+            case 'S3':
+                return { title: 'S3: Hỗ trợ (Hành vi chỉ đạo thấp, hỗ trợ cao)', chuDich: 'Xây dựng sự tự tin vào năng lực.', bangCach: [ 'Nói D3 đưa ý kiến về công việc được giao và cách làm.', 'Lắng nghe và khích lệ.', 'Hướng dẫn giải quyết vấn đề bằng cách đặt câu hỏi mở.' ] };
+            case 'S4':
+                return { title: 'S4: Giao phó (Hành vi chỉ đạo thấp, hỗ trợ thấp)', chuDich: 'Trân trọng sự đóng góp.', bangCach: [ 'Ghi nhận họ có chuyên môn.', 'Ủng hộ sự tự quyết.', 'Khuyến khích họ đổi mới và học hỏi liên tục.' ] };
+            default:
+                return { title: '', chuDich: '', bangCach: [] };
+        }
+    }
+    
+    function renderStramAnalysis(data) {
+        const container = document.getElementById('stramAnalysisContainer');
+        let tableHtml = `
+            <table class="stram-table">
+                <thead>
+                    <tr>
+                        <th>Hạng</th>
+                        <th>Nhân viên</th>
+                        <th>Năng lực (DT DK)</th>
+                        <th>Cam kết (TĐ DK)</th>
+                        <th>Cấp độ (Tổng thể)</th>
+                        <th>Phong cách QL</th>
+                        <th>Chi tiết</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+        
+        data.forEach(e => {
+            const stram = getOverallDevelopmentLevel(e.projectedRevenueCompletion, e.overallProjectedContestCompletion);
+            const nangLucPercent = stram.revenuePercent;
+            const nangLucHigh = nangLucPercent >= 95;
+            const nangLucCell = `<div style="text-align: center; min-width: 100px;">
+                                    <span style="color: ${nangLucHigh ? 'var(--success-color)' : 'var(--danger-color)'}; font-weight: 700; font-size: 1.1em;">
+                                        ${nangLucPercent.toFixed(1)}%
+                                    </span>
+                                    <div class="stram-progress-bar-bg">
+                                        <div class="stram-progress-bar-fill ${nangLucHigh ? 'success' : 'danger'}" style="width: ${Math.min(100, nangLucPercent)}%;"></div>
+                                    </div>
+                               </div>`;
+            const camKetPercent = stram.overallProjectedContestCompletion; 
+            const camKetHigh = camKetPercent >= 80;
+            const camKetCell = `<div style="text-align: center; min-width: 100px;">
+                                    <span style="color: ${camKetHigh ? 'var(--success-color)' : 'var(--danger-color)'}; font-weight: 700; font-size: 1.1em;">
+                                        ${camKetPercent.toFixed(1)}%
+                                    </span>
+                                    <div class="stram-progress-bar-bg">
+                                        <div class="stram-progress-bar-fill ${camKetHigh ? 'success' : 'danger'}" style="width: ${Math.min(100, camKetPercent)}%;"></div>
+                                    </div>
+                               </div>`;
+            
+            tableHtml += `
+                <tr>
+                    <td class="rank-cell">${e.rank}</td>
+                    <td>${abbreviateName(e.name)}</td>
+                    <td>${nangLucCell}</td>
+                    <td>${camKetCell}</td>
+                    <td><span class="d-level-badge ${stram.dLevel.toLowerCase()}">${stram.dLevel}</span></td>
+                    <td><span class="s-level-badge ${stram.sLevel.toLowerCase()}">${stram.sLevel}</span></td>
+                    <td>
+                        <button class="btn-stram-detail" onclick="showStramDetailsPopup('${e.id}')">
+                            Xem chi tiết
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+        container.innerHTML = tableHtml + '</tbody></table>';
+    }
+
+    function showStramDetailsPopup(employeeId) {
+        const employeeData = finalData.find(emp => emp.id === employeeId);
+        if (!employeeData) return;
+
+        const modal = document.getElementById('stram-modal');
+        const modalTitle = document.getElementById('stram-modal-title');
+        const modalBody = document.getElementById('stram-modal-body');
+        
+        modalTitle.textContent = `Phân tích STRAM: ${employeeData.name}`;
+        const overall = getOverallDevelopmentLevel(employeeData.projectedRevenueCompletion, employeeData.overallProjectedContestCompletion);
+        const leaderStyle = getLeadershipStyleInfo(overall.sLevel);
+        const revenueTask = getTaskDevelopmentLevel(employeeData.projectedRevenueCompletion);
+        
+        const contestTasks = Object.entries(employeeData.contestCompletion)
+            .filter(([name]) => sortedContestHeadersGlobal.includes(name))
+            .map(([name, data]) => {
+                return { name, rawData: data, analysis: getTaskDevelopmentLevel(data.projectedPercent) };
+            })
+            .sort((a, b) => b.rawData.projectedPercent - a.rawData.projectedPercent);
+        
+        let contestTaskHtml = contestTasks.map((task, index) => {
+            const leaderAction = getLeadershipStyleInfo(task.analysis.sLevel);
+            const data = task.rawData;
+            const contestTimeframe = getContestTimeframe(task.name);
+            const remainingDays = contestTimeframe.totalDays - contestTimeframe.passedDays + 1;
+            const todayTarget = (data.target - data.actual > 0 && remainingDays > 0) ? (data.target - data.actual) / remainingDays : 0;
+            const targetTodayCell = data.projectedPercent >= 100 ? `<span class="value green">🏆</span>` : `<span class="value">${formatNumberFull(todayTarget, 2)}</span>`;
+            const remaining = data.target - data.actual;
+            const remainingCell = remaining <= 0 ? `<span class="value green">✅</span>` : `<span class="value">${formatNumberFull(remaining, 2)}</span>`;
+            const projectedPercentClass = data.projectedPercent >= 100 ? 'green' : (data.projectedPercent >= 80 ? 'green' : (data.projectedPercent >= 50 ? 'red' : 'red'));
+            
+            return `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td style="text-align: left; vertical-align: top;">
+                        <strong style="font-size: 1.1em; color: var(--text-primary);">${task.name}</strong>
+                        <div class="stram-task-details">
+                            <div><span class="label">M.tiêu Ngày:</span> ${targetTodayCell}</div>
+                            <div><span class="label">Target:</span> <span class="value">${formatNumberFull(data.target, 0)}</span></div>
+                            <div><span class="label">Lũy kế:</span> <span class="value">${formatNumberFull(data.actual, 2)}</span></div>
+                            <div><span class="label">Còn lại:</span> ${remainingCell}</div>
+                            <div><span class="label">% HT:</span> <span class="value">${data.percent.toFixed(0)}%</span></div>
+                            <div><span class="label">% HT DK:</span> <span class="value ${projectedPercentClass}">${data.projectedPercent.toFixed(1)}%</span></div>
+                        </div>
+                    </td>
+                    <td><span class="d-level-badge ${task.analysis.dLevel.toLowerCase()}">${task.analysis.dLevel}</span></td>
+                    <td><span class="s-level-badge ${task.analysis.sLevel.toLowerCase()}">${task.analysis.sLevel}</span></td>
+                    <td style="text-align: left; font-size: 13px; vertical-align: top;">
+                        <strong>${leaderAction.chuDich}</strong>
+                        <ul>${leaderAction.bangCach.map(li => `<li>${li}</li>`).join('')}</ul>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+        
+        const revenueActual = employeeData.actual_DTQD || 0;
+        const revenueTarget = employeeData.revenueTarget || 0;
+        const revenueRemaining = revenueTarget - revenueActual;
+        const timeframe = getContestTimeframe('');
+        const revenueTodayTarget = (revenueRemaining > 0) ? revenueRemaining / (timeframe.totalDays - timeframe.passedDays + 1) : 0;
+        const revenueTodayCell = employeeData.projectedRevenueCompletion >= 100 ? `<span class="value green">🏆</span>` : `<span class="value">${formatNumberFull(revenueTodayTarget, 0)}</span>`;
+        const revenueRemainingCell = revenueRemaining <= 0 ? `<span class="value green">✅</span>` : `<span class="value">${formatNumberFull(revenueRemaining, 0)}</span>`;
+        const projectedPercentClass = employeeData.projectedRevenueCompletion >= 100 ? 'green' : (employeeData.projectedRevenueCompletion >= 80 ? 'green' : (employeeData.projectedRevenueCompletion >= 50 ? 'red' : 'red'));
+
+        let revenueTaskHtml = `
+            <tr>
+                <td style="text-align: left; vertical-align: top;">
+                    <strong style="font-size: 1.1em; color: var(--text-primary);">Doanh thu Cá nhân</strong>
+                    <div class="stram-task-details">
+                        <div><span class="label">M.tiêu Ngày:</span> ${revenueTodayCell}</div>
+                        <div><span class="label">Target:</span> <span class="value">${formatNumberFull(revenueTarget, 0)}</span></div>
+                        <div><span class="label">Lũy kế:</span> <span class="value">${formatNumberFull(revenueActual, 0)}</span></div>
+                        <div><span class="label">Còn lại:</span> ${revenueRemainingCell}</div>
+                        <div><span class="label">% HT:</span> <span class="value">${employeeData.revenueCompletion.toFixed(0)}%</span></div>
+                        <div><span class="label">% HT DK:</span> <span class="value ${projectedPercentClass}">${employeeData.projectedRevenueCompletion.toFixed(1)}%</span></div>
+                    </div>
+                </td>
+                <td><span class="d-level-badge ${revenueTask.dLevel.toLowerCase()}">${revenueTask.dLevel}</span></td>
+                <td><span class="s-level-badge ${revenueTask.sLevel.toLowerCase()}">${revenueTask.sLevel}</span></td>
+                <td style="text-align: left; font-size: 13px; vertical-align: top;">
+                    <strong>${getLeadershipStyleInfo(revenueTask.sLevel).chuDich}</strong>
+                    <ul>${getLeadershipStyleInfo(revenueTask.sLevel).bangCach.map(li => `<li>${li}</li>`).join('')}</ul>
+                </td>
+            </tr>
+        `;
+
+        modalBody.innerHTML = `
+            <style>
+                #stram-modal .modal-content { max-width: 1200px; }
+                .stram-task-table { table-layout: fixed; width: 100%; }
+                .stram-task-table th, .stram-task-table td { word-wrap: break-word; font-size: 12px; padding: 12px 8px; }
+                #tab-contest .stram-task-table th:nth-child(1), #tab-contest .stram-task-table td:nth-child(1) { width: 5%; }
+                #tab-contest .stram-task-table th:nth-child(2), #tab-contest .stram-task-table td:nth-child(2) { width: 35%; text-align: left; }
+                #tab-contest .stram-task-table th:nth-child(3), #tab-contest .stram-task-table td:nth-child(3) { width: 8%; }
+                #tab-contest .stram-task-table th:nth-child(4), #tab-contest .stram-task-table td:nth-child(4) { width: 8%; }
+                #tab-contest .stram-task-table th:nth-child(5), #tab-contest .stram-task-table td:nth-child(5) { width: 44%; text-align: left; }
+                #tab-revenue .stram-task-table th:nth-child(1), #tab-revenue .stram-task-table td:nth-child(1) { width: 35%; text-align: left; }
+                #tab-revenue .stram-task-table th:nth-child(2), #tab-revenue .stram-task-table td:nth-child(2) { width: 8%; }
+                #tab-revenue .stram-task-table th:nth-child(3), #tab-revenue .stram-task-table td:nth-child(3) { width: 8%; }
+                #tab-revenue .stram-task-table th:nth-child(4), #tab-revenue .stram-task-table td:nth-child(4) { width: 49%; text-align: left; }
+            </style>
+            <div class="stram-modal-grid">
+                <div class="stram-leader-card">
+                    <h3>Chuẩn đoán Tổng thể</h3>
+                    <p style="font-size: 1.1em; text-align: center;">
+                        <span class="d-level-badge ${overall.dLevel.toLowerCase()}">${overall.dLevel}</span>
+                        <span style="font-size: 1.5em; margin: 0 10px;">➔</span>
+                        <span class="s-level-badge ${overall.sLevel.toLowerCase()}">${overall.sLevel}</span>
+                    </p>
+                    <p style="font-size: 14px; text-align: center; color: var(--text-muted); margin-top: 5px;"><i>"${overall.description}"</i></p>
+                    <hr style="border: none; border-top: 1px solid var(--border-main); margin: 15px 0;">
+                    <h3>Gợi ý Phong cách Lãnh đạo Chung</h3>
+                    <h4>${leaderStyle.title}</h4>
+                    <h4>Chủ đích:</h4>
+                    <p style="font-size: 14px; color: var(--text-muted);">${leaderStyle.chuDich}</p>
+                    <h4>Bằng cách:</h4>
+                    <ul>${leaderStyle.bangCach.map(item => `<li>${item}</li>`).join('')}</ul>
+                </div>
+                <div>
+                    <div class="stram-tabs">
+                        <button class="stram-tab-btn active" data-tab="tab-contest">Thi đua (${contestTasks.length})</button>
+                        <button class="stram-tab-btn" data-tab="tab-revenue">Doanh thu</button>
+                    </div>
+                    <div id="tab-contest" class="stram-tab-content active" style="max-height: 60vh; overflow-y: auto;">
+                        <table class="stram-task-table">
+                            <thead><tr><th>STT</th><th>Nhiệm vụ (Ngành hàng) & Chi tiết</th><th>Cấp độ (D)</th><th>Phong cách (S)</th><th>Gợi ý Hành động</th></tr></thead>
+                            <tbody>${contestTaskHtml}</tbody>
+                        </table>
+                    </div>
+                    <div id="tab-revenue" class="stram-tab-content">
+                         <table class="stram-task-table">
+                            <thead><tr><th>Nhiệm vụ & Chi tiết</th><th>Cấp độ (D)</th><th>Phong cách (S)</th><th>Gợi ý Hành động</th></tr></thead>
+                            <tbody>${revenueTaskHtml}</tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        modalBody.querySelectorAll('.stram-tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                modalBody.querySelectorAll('.stram-tab-btn').forEach(b => b.classList.remove('active'));
+                modalBody.querySelectorAll('.stram-tab-content').forEach(c => c.classList.remove('active'));
+                btn.classList.add('active');
+                document.getElementById(btn.dataset.tab).classList.add('active');
+            });
+        });
+        modal.style.display = 'block';
+    }
+</script>
+</body>
+</html>

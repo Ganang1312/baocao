@@ -1,0 +1,1489 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Lũy kế - v219.2 (Fix Category History)</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root { --primary-accent: #108AB1; --success-color: #06D7A0; --warning-color: #FFD167; --danger-color: #F04770; --secondary-accent: #F78C6A; --text-primary: #073A4B; --text-on-dark: #FFFFFF; --text-muted: #5A7A84; --bg-main: #F4F7F9; --border-main: #DDE3E7; --shadow-main: 0px 2.8px 2.2px rgba(7, 58, 75, 0.02), 0px 6.7px 5.3px rgba(7, 58, 75, 0.028), 0px 12.5px 10px rgba(7, 58, 75, 0.035), 0px 22.3px 17.9px rgba(7, 58, 75, 0.042), 0px 41.8px 33.4px rgba(7, 58, 75, 0.05), 0px 100px 80px rgba(7, 58, 75, 0.07); }
+        .capture-mode .card, .capture-mode .input-section, .capture-mode .action-btn { box-shadow: none !important; transform: none !important; transition: none !important; }
+        html, body { width: 100%; margin: 0; padding: 0; overflow-x: hidden; background-color: var(--bg-main); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; color: var(--text-primary); }
+        .container { width: 100%; max-width: 100%; margin: 0; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; gap: 25px; }
+        header { text-align: center; margin-bottom: 10px; }
+        header h1 { color: var(--text-primary); margin: 0; font-size: 2.5em; font-weight: 700; }
+        
+        /* UPDATED GRID FOR 4 COLUMNS IN 1 ROW */
+        .input-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+        
+        .input-section, .card { background: #ffffff; padding: 15px; border-radius: 15px; border: 1px solid var(--border-main); box-shadow: var(--shadow-main); transition: transform 0.3s ease, box-shadow 0.3s ease; overflow: hidden; display: flex; flex-direction: column; }
+        .card:hover { transform: translateY(-5px); }
+        .input-section h4 { margin-top: 0; color: var(--text-muted); font-size: 0.95em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .input-section h4 a { color: inherit; text-decoration: none; transition: color 0.2s; }
+        .input-section h4 a:hover { color: var(--primary-accent); }
+        textarea { width: 100%; padding: 8px; border: 1px solid var(--border-main); background: #f8f9fa; border-radius: 8px; font-size: 13px; box-sizing: border-box; resize: vertical; }
+        .mainDataInput, .contestDataInput { height: 100px; }
+        .button-container { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 15px; width: 100%; margin-top: 25px; }
+        .input-wrapper { display: flex; flex-direction: column; }
+        .paste-btn-container { display: flex; justify-content: flex-end; padding-top: 5px; }
+        .paste-btn { padding: 4px 10px; font-size: 12px; font-weight: 600; background-color: var(--primary-accent); color: white; border: none; border-radius: 6px; cursor: pointer; opacity: 0.9; transition: all 0.2s; }
+        .paste-btn:hover { opacity: 1; transform: translateY(-1px); box-shadow: 0 2px 8px rgba(16, 138, 177, 0.4); }
+        .input-header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .input-header-flex h4 { margin: 0; }
+        .interactive-table-wrapper { height: 180px; overflow-y: auto; border: 1px solid var(--border-main); border-radius: 8px; }
+        .interactive-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .interactive-table thead th { position: sticky; top: 0; background-color: #f8f9fa; color: var(--text-primary); font-weight: 600; padding: 5px; text-align: center; border-bottom: 1px solid var(--border-main); z-index: 1; vertical-align: top; }
+        .interactive-table tbody td { padding: 6px 8px; border-bottom: 1px solid #f1f1f1; text-align: right; }
+        .interactive-table tbody td:first-child { text-align: center; font-weight: 500; background-color: #f8f9fa; }
+        .interactive-table tbody td[contenteditable="true"] { background-color: #fff; transition: background-color 0.2s; }
+        .interactive-table tbody td[contenteditable="true"]:focus { background-color: #e6f7ff; outline: 2px solid var(--primary-accent); outline-offset: -2px; }
+        .interactive-table tbody tr:last-child td { border-bottom: none; }
+        .th-content { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding-top: 5px; }
+        .col-actions { display: flex; gap: 8px; }
+        .col-action-btn { background: none; border: none; cursor: pointer; padding: 2px; display: inline-flex; align-items: center; justify-content: center; border-radius: 4px; transition: background-color 0.2s; }
+        .col-action-btn:hover { background-color: #ddd; }
+        .col-action-btn svg { width: 16px; height: 16px; }
+        .col-action-btn.copy svg { color: var(--success-color); }
+        .col-action-btn.paste svg { color: var(--primary-accent); }
+        .col-action-btn.clear svg { color: var(--danger-color); }
+        .action-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 15px; font-size: 18px; font-weight: 600; color: var(--text-on-dark); border: none; border-radius: 10px; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 4px 6px rgba(0,0,0,0.1), inset 0 -2px 0 rgba(0,0,0,0.2); flex-grow: 1; max-width: 300px; }
+        .action-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 10px rgba(0,0,0,0.15), inset 0 -2px 0 rgba(0,0,0,0.2); }
+        .action-btn:active { transform: translateY(1px); box-shadow: 0 2px 3px rgba(0,0,0,0.15), inset 0 1px 0 rgba(0,0,0,0.2); }
+        .action-btn svg { width: 20px; height: 20px; }
+        .analyzeBtn { background: var(--primary-accent); }
+        .captureBtn { background: linear-gradient(45deg, var(--success-color), #05B386); }
+        .copySummaryBtn { background: linear-gradient(45deg, var(--primary-accent), #0d6c8b); }
+        .dashboard-body { display: none; margin-top: 15px; }
+        .report-title { text-align: center; font-size: 1.8em; font-weight: 700; margin: 10px 0 0 0; color: var(--text-primary); }
+        #capture-area-luyke > * + * { margin-top: 25px; }
+        #capture-content-luyke > * + * { margin-top: 25px; }
+        .progress-bar-container { padding: 15px 25px; }
+        .progress-labels { display: flex; justify-content: space-between; font-size: 1em; font-weight: 700; margin-bottom: 8px; color: var(--text-muted); }
+        .progress-track { width: 100%; height: 18px; background-color: #e9ecef; border-radius: 9px; overflow: hidden; border: 1px solid #ddd; }
+        .progress-fill { height: 100%; background: var(--primary-accent); border-radius: 9px; transition: width 0.8s ease-out; }
+        .progress-text-wrapper { text-align: center; margin-top: 4px; font-size: 0.9em; font-weight: bold; color: var(--text-primary); }
+        .kpi-group-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 25px; }
+        .kpi-group-card { background-color: #fff; border-radius: 15px; box-shadow: var(--shadow-main); overflow: hidden; border: 1px solid var(--border-main); }
+        .kpi-group-header { color: white; padding: 12px 20px; font-size: 1.2em; font-weight: 700; text-align: center; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .kpi-group-header svg { width: 24px; height: 24px; }
+        .kpi-group-header.blue { background-color: var(--primary-accent); }
+        .kpi-group-header.orange { background-color: var(--secondary-accent); }
+        .kpi-group-header.red { background-color: var(--danger-color); }
+        .kpi-group-body { padding: 15px 20px; display: flex; flex-direction: column; gap: 12px; }
+        .kpi-item { display: flex; justify-content: space-between; align-items: center; font-size: 1.1em; padding: 5px 0; border-bottom: 1px solid #f0f0f0; }
+        .kpi-item:last-child { border-bottom: none; }
+        .kpi-label { display: flex; align-items: center; gap: 10px; color: var(--text-primary); font-weight: 600; }
+        .kpi-label svg { width: 20px; height: 20px; flex-shrink: 0; }
+        .kpi-value { font-weight: 700; color: var(--text-primary); font-size: 1.15em; }
+        .dashboard-layout-grid { display: grid; gap: 25px; align-items: stretch; width: 100%; }
+        .charts-column { display: flex; flex-direction: column; gap: 25px; min-width: 0; }
+        .chart-wrapper, .report-section { padding: 25px; min-width: 0; }
+        .report-section h2, .chart-wrapper h2 { font-size: 1.8em; color: var(--primary-accent); text-align: center; margin-top:0; margin-bottom: 20px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .chart-wrapper h2 svg, .report-section h2 svg { width: 24px !important; height: 24px !important; flex-shrink: 0; }
+        .chart-container { position: relative; width: 100%; height: 300px; flex-grow: 1; }
+        .summary-textarea { height: 500px; background-color: #f8f9fa; border: 1px solid var(--border-main); }
+        .toast-notification { position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%); background-color: var(--success-color); color: white; padding: 16px 30px; border-radius: 8px; z-index: 1001; font-size: 1.1em; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: bottom 0.5s ease-in-out; }
+        .toast-notification.show { bottom: 30px; }
+        .toast-notification.error { background-color: var(--danger-color); }
+        .details-toggle { text-align: center; margin-top: 25px; }
+        .details-toggle button { font-size: 0.9em; font-weight: 600; background: #6c757d; color: var(--text-on-dark); padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; transition: background-color 0.3s, box-shadow 0.3s; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); }
+        .details-toggle button:hover { background-color: #5a6268; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); }
+        .tables-container { max-height: 0; overflow: hidden; transition: max-height 0.5s ease-out; }
+        .tables-container.show { max-height: 5000px; margin-top: 25px; }
+        #specificTablesContainer.show { max-height: 5000px; margin-top: 25px; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid var(--border-main); }
+        thead th { background-color: var(--primary-accent); color: var(--text-on-dark); text-transform: uppercase; font-size: 0.9em; }
+        tbody tr:nth-child(even) { background-color: #f8f9fa; }
+        tbody tr:hover { background-color: #e9ecef; }
+        #contest-table-luyke-wrapper { padding: 25px; }
+        #contest-table-luyke-wrapper h2 { text-align: center; font-size: 2em; margin-bottom: 25px; }
+        .contest-split-layout { display: flex; flex-direction: column; gap: 25px; align-items: center; }
+        @media (min-width: 992px) {
+            .contest-split-layout { flex-direction: row; align-items: flex-start; justify-content: space-between; }
+            .contest-group { flex: 1 1 calc(50% - 12.5px); max-width: calc(50% - 12.5px); }
+        }
+        .contest-group { background: #fff; padding: 20px; border-radius: 15px; border: 1px solid var(--border-main); box-shadow: var(--shadow-main); width: 100%; }
+        .contest-group-title { font-size: 1.5em; font-weight: 700; margin: 0 0 15px 0; text-align: center; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .contest-group-title.top-performers { color: var(--success-color); }
+        .contest-group-title.needs-improvement { color: var(--danger-color); }
+        .contest-detail-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        .contest-detail-table th, .contest-detail-table td { padding: 12px 8px; text-align: left; border-bottom: 1px solid var(--border-main); border-right: 1px solid var(--border-main); vertical-align: middle; }
+        .contest-detail-table th:last-child, .contest-detail-table td:last-child { border-right: none; }
+        .contest-detail-table thead th { background-color: #f8f9fa; color: var(--text-primary); font-weight: 600; text-align: center; font-size: 0.9em; text-transform: uppercase; }
+        .contest-detail-table tbody tr:last-child td { border-bottom: none; }
+        .contest-detail-table tbody tr:hover { background-color: #e9ecef; }
+        .contest-detail-table td { font-weight: 500; }
+        .contest-detail-table th, .contest-detail-table td { text-align: center; }
+        .contest-detail-table th.col-category, .contest-detail-table td.col-category { text-align: left; font-weight: 700; width: 25%; }
+        .contest-detail-table .col-rank { width: 40px; }
+        .col-negative { color: var(--danger-color); font-weight: bold; }
+        .progress-bar-cell { width: 300px; min-width: 250px; }
+        .bar-wrapper { display: flex; flex-direction: column; gap: 4px; width: 100%; }
+        .bar-container-row { display: flex; align-items: center; gap: 10px; width: 100%; }
+        .bar-track { flex-grow: 1; height: 16px; background-color: #e9ecef; border-radius: 8px; overflow: hidden; position: relative; border: 1px solid #dee2e6; }
+        .bar-fill { height: 100%; border-radius: 8px; transition: width 0.5s ease-out; display: flex; align-items: center; justify-content: flex-end; position: relative;}
+        .bar-info-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.85em; color: var(--text-muted); font-weight: 600; margin-top: 2px; }
+        .bar-percent-text { font-weight: 800; font-size: 0.9em; margin-right: 5px; color: rgba(255,255,255,0.9); text-shadow: 0 1px 2px rgba(0,0,0,0.3); }
+        .growth-badge { display: inline-flex; align-items: center; padding: 2px 6px; border-radius: 4px; font-size: 0.8em; font-weight: 700; margin-left: 5px; }
+        .growth-up { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .growth-down { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .growth-neutral { background-color: #f8f9fa; color: #6c757d; border: 1px solid #dee2e6; }
+        .bar-fill .growth-badge-float { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 4px 8px; border-radius: 6px; font-size: 0.9em; font-weight: 800; z-index: 2; }
+        .tooltip { position: relative; display: inline-block; cursor: pointer; }
+        .tooltip .tooltiptext { visibility: hidden; width: 160px; background-color: #555; color: #fff; text-align: center; border-radius: 6px; padding: 5px 0; position: absolute; z-index: 1; bottom: 125%; left: 50%; margin-left: -80px; opacity: 0; transition: opacity: 0.3s; }
+        .tooltip .tooltiptext::after { content: ""; position: absolute; top: 100%; left: 50%; margin-left: -5px; border-width: 5px; border-style: solid; border-color: #555 transparent transparent transparent; }
+        .tooltip:hover .tooltiptext { visibility: visible; opacity: 1; }
+        .table-io-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 10px; }
+        .action-btn-small { padding: 6px 12px; font-size: 13px; font-weight: 600; color: white; border: none; border-radius: 6px; cursor: pointer; transition: all 0.2s; opacity: 0.9; }
+        .action-btn-small.import { background-color: var(--success-color); }
+        .action-btn-small.export { background-color: var(--secondary-accent); }
+        .action-btn-small:hover { opacity: 1; transform: translateY(-1px); }
+        .comparison-controls { display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 20px; padding: 10px; border-radius: 8px; background-color: #eef4f7; }
+        .comparison-controls label { font-weight: 600; color: var(--text-primary); }
+        .comparison-controls input[type="date"] { padding: 8px; border: 1px solid var(--border-main); border-radius: 6px; font-size: 14px; cursor: pointer; }
+        #contestComparisonControls { margin: 0 0 25px 0; padding: 15px 25px; background-color: #eef4f7; border-radius: 15px; display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; }
+        #contestComparisonControls label { display: flex; align-items: center; gap: 5px; font-weight: 600; }
+        .modal { display: none; position: fixed; z-index: 1002; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4); padding-top: 60px; }
+        .modal-content { background-color: #fefefe; margin: 5% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 600px; border-radius: 15px; box-shadow: var(--shadow-main); }
+        .close-btn { color: #aaa; float: right; font-size: 28px; font-weight: bold; transition: color 0.2s; }
+        .close-btn:hover, .close-btn:focus { color: var(--danger-color); text-decoration: none; cursor: pointer; }
+        .category-list { max-height: 400px; overflow-y: auto; border: 1px solid var(--border-main); padding: 10px; border-radius: 8px; margin-bottom: 15px; }
+        .category-list label { display: block; padding: 5px 0; cursor: pointer; transition: background-color 0.2s; border-bottom: 1px dotted #eee; }
+        .category-list label:hover { background-color: #f8f9fa; }
+        .category-list input[type="checkbox"] { margin-right: 10px; transform: scale(1.2); }
+        .modal-footer { display: flex; justify-content: flex-end; gap: 10px; }
+        @media (min-width: 992px) {
+             .dashboard-layout-grid.two-cols { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 20px; }
+             .dashboard-layout-grid.single-col { grid-template-columns: 1fr; }
+             .charts-column.main-charts-row { flex-direction: row; flex-wrap: wrap; gap: 25px; }
+             .charts-column.side-charts { grid-column: 2 / 3; order: 2; }
+        }
+        @media (max-width: 1200px) {
+             .input-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 992px) {
+            .dashboard-layout-grid {grid-template-columns: 1fr !important;}
+            .charts-column { grid-row: 1; }
+            .comparison-controls { flex-direction: column; align-items: flex-start; }
+            #contestComparisonControls { flex-direction: column; align-items: center; }
+            #contestCategoryFilterControls { flex-direction: column; align-items: center !important; }
+        }
+        @media (max-width: 768px) {
+            .input-grid { grid-template-columns: 1fr; }
+            body { padding: 10px; }
+            .container { padding: 10px; }
+            header h1 { font-size: 1.8em; }
+            .card { padding: 15px; }
+            .report-section h2, .chart-wrapper h2 { font-size: 1.5em; }
+            .contest-detail-table { font-size: 12px; }
+            .contest-detail-table th, .contest-detail-table td { padding: 8px 4px; }
+            .contest-group { flex: 1 1 100%; }
+            .progress-bar-cell { width: 150px; min-width: 120px; }
+        }
+
+        /* INFOGRAPHIC STYLES */
+        .infographic-container {
+            background-color: #fff;
+            border: none;
+            padding: 0;
+            border-radius: 0;
+        }
+        .info-header {
+            background: linear-gradient(90deg, #0f688d 0%, #108AB1 50%, #0f688d 100%);
+            color: white;
+            padding: 15px;
+            text-align: center;
+            border-radius: 15px 15px 0 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+        }
+        .info-header h2 {
+            color: white !important;
+            margin: 0;
+            text-transform: uppercase;
+            font-size: 1.8em;
+            display: flex;
+            align-items: center;
+        }
+        .info-top-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            padding: 20px;
+            background-color: #f0f7fa;
+        }
+        .info-stat-col {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .info-stat-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.1em;
+            color: #333;
+            font-weight: 600;
+        }
+        .info-stat-icon {
+            width: 24px;
+            text-align: center;
+        }
+        .info-stat-value {
+            font-weight: 800;
+            font-size: 1.1em;
+        }
+        .info-columns-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            padding: 15px;
+            background-color: #a4c8d6; /* Blueish background */
+            border-radius: 0 0 15px 15px;
+        }
+        .info-col-card {
+            border-radius: 10px;
+            overflow: hidden;
+            background: white;
+            height: 100%;
+        }
+        .info-col-header {
+            padding: 10px;
+            color: white;
+            font-weight: 700;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1em;
+        }
+        .info-col-body {
+            padding: 10px;
+            font-size: 0.95em;
+            background-color: #fff;
+        }
+        .info-list-item {
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+        .info-green-header { background-color: #28a745; }
+        .info-green-body { background-color: #e8f5e9; height: 100%; }
+        .info-yellow-header { background-color: #ffc107; color: #333; }
+        .info-yellow-body { background-color: #fff3cd; height: 100%; }
+        .info-red-header { background-color: #dc3545; }
+        .info-red-body { background-color: #f8d7da; height: 100%; }
+        
+        @media (max-width: 768px) {
+            .info-top-stats { grid-template-columns: 1fr; }
+            .info-columns-container { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header><h1>BI LUỸ KẾ SIÊU THỊ</h1></header>
+
+        <div id="luyKeInputGrid" class="input-grid">
+            <div class="input-section">
+                <div class="input-header-flex">
+                    <h4><a href="https://bi.thegioididong.com/sieu-thi-con?id=16753&tab=bcdtnh&rt=2&dm=1" target="_blank" rel="noopener noreferrer">Dữ liệu Báo cáo Kinh doanh</a></h4>
+                </div>
+                <div class="input-wrapper">
+                    <textarea id="mainDataInput" class="mainDataInput" placeholder="Dán dữ liệu từ BI vào đây..."></textarea>
+                    <div class="paste-btn-container">
+                        <button class="paste-btn" data-target="mainDataInput">Dán Thông Minh</button>
+                    </div>
+                </div>
+            </div>
+            <div class="input-section">
+                <div class="input-header-flex">
+                    <h4><a href="https://bi.thegioididong.com/thi-dua-st?id=16753&tab=1&rt=2&dm=2&mt=1" target="_blank" rel="noopener noreferrer">Dữ liệu Thi đua</a></h4>
+                </div>
+                <div class="input-wrapper">
+                    <textarea id="contestDataInput" class="contestDataInput" placeholder="Dán dữ liệu thi đua vào đây..."></textarea>
+                    <div class="paste-btn-container">
+                        <button class="paste-btn" data-target="contestDataInput">Dán Thông Minh</button>
+                    </div>
+                </div>
+            </div>
+            <div class="input-section">
+                <div class="input-header-flex">
+                    <h4>Dữ liệu Năm (Bảng tương tác)</h4>
+                </div>
+                <div id="yearlyDataInputContainer"></div>
+            </div>
+            <div class="input-section">
+                <div class="input-header-flex">
+                    <h4>Dữ liệu So sánh Ngày</h4>
+                </div>
+                <div id="dailyComparisonInputContainer"></div>
+            </div>
+        </div>
+        <div class="button-container">
+             <button id="analyzeBtn" class="action-btn analyzeBtn">TẠO DASHBOARD LUỸ KẾ</button>
+             <button id="exportAllBtn" class="action-btn" style="background: var(--warning-color); color: #333;">
+                <svg fill="currentColor" viewBox="0 0 24 24"><path d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z" /></svg>
+                Xuất Dữ liệu
+            </button>
+            <button id="importAllBtn" class="action-btn" style="background: var(--secondary-accent);">
+                <svg fill="currentColor" viewBox="0 0 24 24"><path d="M9,16V10H5L12,3L19,10H15V16H9M5,20V18H19V20H5Z" /></svg>
+                Nhập Dữ liệu
+            </button>
+             <button id="showInputsBtnLuyKe" class="action-btn" style="display: none; background: #6c757d;">Chỉnh sửa Dữ liệu</button>
+             <button id="captureBtnLuyKe" class="action-btn captureBtn">
+                 <svg fill="currentColor" viewBox="0 0 24 24"><path d="M4,4H7L9,2H15L17,4H20A2,2 0 0,1 22,6V18A2,2 0 0,1 20,20H4A2,2 0 0,1 2,18V6A2,2 0 0,1 4,4M12,7A5,5 0 0,0 7,12A5,5 0 0,0 12,17A5,5 0 0,0 17,12A5,5 0 0,0 12,7M12,9A3,3 0 0,1 15,12A3,3 0 0,1 12,15A3,3 0 0,1 9,12A3,3 0 0,1 12,9Z" /></svg>
+                 Chụp ảnh Báo cáo
+             </button>
+        </div>
+        <div id="dashboard-body-luyke" class="dashboard-body">
+            <div id="capture-area-luyke">
+                <div id="capture-content-luyke">
+                    <div id="reportTitleLuyKe" class="report-title"></div>
+                    <div class="progress-bar-container card">
+                        <div class="progress-labels"><span>Tiến độ Tháng</span><span id="progress-summary-date"></span></div>
+                        <div class="progress-track"><div class="progress-fill" id="progress-fill-date"></div></div>
+                        <div class="progress-text-wrapper"><span id="progress-text-date"></span></div>
+                    </div>
+                    <div class="progress-bar-container card">
+                        <div class="progress-labels"><span>Tiến độ Target</span><span id="progress-summary-target"></span></div>
+                        <div class="progress-track"><div class="progress-fill" id="progress-fill-target"></div></div>
+                        <div class="progress-text-wrapper"><span id="progress-text-target"></span></div>
+                    </div>
+                    
+                    <div id="kpi-group-container" class="kpi-group-container"></div>
+                    
+                    <div class="dashboard-layout-grid two-cols" id="mainChartGrid">
+                        <div class="charts-column main-charts">
+                            <div class="chart-wrapper card" id="yearly-revenue-chart-wrapper"></div>
+                            <div class="chart-wrapper card" id="daily-comparison-chart-wrapper"></div>
+                        </div>
+                        <div class="charts-column side-charts">
+                            <div class="chart-wrapper card" id="contribution-chart-wrapper"></div>
+                            <div class="chart-wrapper card" id="growth-chart-wrapper"></div>
+                        </div>
+                    </div>
+                    
+                    <div id="contestComparisonControls">
+                        <label for="contest-date-current">Ngày hiện tại:</label>
+                        <input type="date" id="contest-date-current" />
+                        <label for="contest-date-previous">Ngày so sánh:</label>
+                        <input type="date" id="contest-date-previous" />
+                        <button id="compareContestBtn" class="action-btn-small" style="background-color: var(--primary-accent); padding: 8px 16px;">So sánh Thi đua</button>
+                        <button id="saveContestDataBtn" class="action-btn-small" style="background-color: var(--success-color); padding: 8px 16px;">Lưu Dữ liệu Hiện tại</button>
+                        
+                        <div id="contestCategoryFilterControls" style="display: flex; flex-wrap: wrap; gap: 15px; align-items: center; margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border-main); width: 100%; justify-content: center;">
+                            <label><input type="checkbox" id="selectAllContestCategories"> Hiển thị TẤT CẢ Ngành hàng</label>
+                            <button id="openCategorySelectModal" class="action-btn-small" style="background-color: var(--secondary-accent); padding: 8px 16px;">
+                                Chọn Ngành hàng cụ thể
+                            </button>
+                            <span id="selectedCategoryCount" style="font-weight: 600; color: var(--text-primary);"></span>
+                        </div>
+                    </div>
+
+                    <div id="contest-table-luyke-wrapper" class="report-section card" style="grid-column: 1 / -1;"></div>
+
+                </div>
+                <div class="details-toggle">
+                    <button id="toggleSpecificTablesBtn">📊 Ẩn/Hiện Bảng Chi tiết Ngành hàng</button>
+                </div>
+                <div id="specificTablesContainer" class="tables-container">
+                    <div id="categoryComparisonControls" class="comparison-controls">
+                        <label for="date-current">Ngày hiện tại:</label>
+                        <input type="date" id="date-current" />
+                        <label for="date-previous">Ngày so sánh:</label>
+                        <input type="date" id="date-previous" />
+                        <button id="compareCategoryBtn" class="action-btn-small" style="background-color: var(--primary-accent); padding: 8px 16px;">So sánh</button>
+                    </div>
+
+                    <div class="dashboard-layout-grid" style="gap: 25px;">
+                        <div class="report-section card" id="category-table-container"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="summary-report-wrapper-luyke" class="report-section card" style="display:none;"></div>
+
+            <!-- NEW INFOGRAPHIC SECTION -->
+            <div id="infographic-report-wrapper" class="report-section card" style="display:none; margin-top: 20px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
+                     <h2 style="margin:0;">Báo Cáo Đồ Hoạ (Infographic)</h2>
+                     <button id="captureInfographicBtn" class="action-btn-small captureBtn" style="padding: 8px 20px; font-size: 15px;">📸 Chụp & Xuất Ảnh</button>
+                </div>
+                <div id="infographic-capture-area" style="border-radius: 15px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                    <div class="infographic-container">
+                        <div class="info-header">
+                            <svg fill="currentColor" viewBox="0 0 24 24" width="32" height="32"><path d="M16,6L18.29,8.29L13.41,13.17L9.41,9.17L2,16.59L3.41,18L9.41,10.59L13.41,14.59L19.71,8.29L22,10.59V6H16Z"/></svg>
+                            <h2 id="info-title-text">BÁO CÁO SỨC KHOẺ SIÊU THỊ</h2>
+                            <svg fill="currentColor" viewBox="0 0 24 24" width="32" height="32"><path d="M3,3H21V5H3V3M3,7H21V9H3V7M3,11H21V13H3V11M3,15H21V17H3V15M3,19H21V21H3V19Z"/></svg>
+                        </div>
+                        <div class="info-top-stats" id="info-top-stats-content"></div>
+                        <div class="info-columns-container" id="info-columns-content"></div>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+	
+    <div id="categorySelectModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h2>Chọn Ngành hàng Thi đua</h2>
+            <div class="category-list" id="categoryChecklist"></div>
+            
+            <!-- NEW IMPORT/EXPORT SECTION IN MODAL -->
+            <details style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px;">
+                <summary style="cursor: pointer; font-weight: bold; color: var(--primary-accent); list-style: none; display:flex; align-items:center; gap:5px;">📂 Nhập/Xuất Danh sách (Click để mở) <small style="color:#999; font-weight:normal;">▼</small></summary>
+                <p style="font-size: 0.9em; color: #666; margin: 5px 0;">Sao chép mã dưới đây để chia sẻ hoặc dán mã vào để nhập danh sách:</p>
+                <textarea id="categoryExportImportArea" style="width: 100%; height: 80px; font-family: monospace; font-size: 0.8em; border: 1px solid #ccc; padding: 5px;" placeholder='["Ngành A", "Ngành B"]'></textarea>
+                <div style="display: flex; gap: 10px; margin-top: 10px; justify-content:flex-end;">
+                    <button id="btnCopyCategoryList" class="action-btn-small" style="background-color: #6c757d;">Sao chép (Xuất)</button>
+                    <button id="btnApplyCategoryList" class="action-btn-small" style="background-color: var(--primary-accent);">Áp dụng (Nhập)</button>
+                </div>
+            </details>
+
+            <div class="modal-footer" style="margin-top:15px;">
+                <button id="applyCategoryFilterBtn" class="action-btn-small" style="background-color: var(--primary-accent);">Áp dụng Bộ lọc</button>
+            </div>
+        </div>
+    </div>
+
+	<script>
+    function extractData(fullText, regex) {
+        const match = fullText.match(regex);
+        return (match && match[1]) ? match[1].trim() : '';
+    }
+
+    async function handleSmartPaste(targetId) {
+        const targetTextarea = document.getElementById(targetId);
+        if (!targetTextarea) return;
+        try {
+            const text = await navigator.clipboard.readText();
+            if (!text) { showToast('Clipboard rỗng!', true); return; }
+            let extractedData = '';
+            switch (targetId) {
+                case 'mainDataInput':
+                    extractedData = extractData(text, /(Nhóm ngành hàng\tSố lượng\tDTQĐ[\s\S]+?)Hỗ trợ BI/);
+                    localStorage.setItem('luyKeMainData', extractedData || text);
+                    break;
+                case 'contestDataInput':
+                    extractedData = extractData(text, /(Ngành hàng\tDTQĐ\tTarget[\s\S]+?)Hỗ trợ BI/);
+                    localStorage.setItem('luyKeContestData', extractedData || text);
+                    break;
+                default: extractedData = text;
+            }
+            targetTextarea.value = extractedData || text;
+            showToast('Đã dán và lọc dữ liệu thông minh!');
+        } catch (err) { console.error('Lỗi khi dán: ', err); showToast('Không thể truy cập clipboard.', true); }
+    }
+
+    function setupSmartPasteButtons() {
+        document.querySelectorAll('.paste-btn').forEach(button => {
+            button.addEventListener('click', (e) => handleSmartPaste(e.target.getAttribute('data-target')));
+        });
+    }
+
+    async function copyColumnData(tableId, colIndex) {
+        const table = document.getElementById(tableId);
+        if (!table) return;
+        let dataString = '';
+        const rows = table.tBodies[0].rows;
+        for (let i = 0; i < rows.length; i++) {
+            const cell = rows[i].cells[colIndex];
+            if (cell) dataString += cell.innerText.trim() + '\n';
+        }
+        const textarea = document.createElement('textarea');
+        textarea.value = dataString.trim();
+        document.body.appendChild(textarea);
+        textarea.select();
+        try { document.execCommand('copy'); showToast('Đã sao chép dữ liệu cột!'); } 
+        catch (err) { console.error(err); showToast('Lỗi khi sao chép.', true); }
+        document.body.removeChild(textarea);
+    }
+
+    async function pasteColumnData(tableId, colIndex) {
+        try {
+            const text = await navigator.clipboard.readText();
+            if (!text) { showToast('Clipboard rỗng!', true); return; }
+            const table = document.getElementById(tableId);
+            if (!table) return;
+            const pastedRows = text.split(/\r?\n/).filter(row => row.trim() !== '');
+            const tableRows = table.tBodies[0].rows;
+            pastedRows.forEach((cellData, i) => {
+                if (i >= tableRows.length) return;
+                const targetCell = tableRows[i].cells[colIndex];
+                if (targetCell && targetCell.isContentEditable) targetCell.innerText = cellData.trim();
+            });
+            saveTableData(tableId);
+            showToast(`Đã dán dữ liệu vào cột!`);
+        } catch (err) { console.error(err); showToast('Không thể truy cập clipboard.', true); }
+    }
+
+    function clearColumnData(tableId, colIndex) {
+        const table = document.getElementById(tableId);
+        if (!table) return;
+        const rows = table.tBodies[0].rows;
+        for (let i = 0; i < rows.length; i++) {
+            const cell = rows[i].cells[colIndex];
+            if (cell && cell.isContentEditable) cell.innerText = '';
+        }
+        saveTableData(tableId);
+        showToast('Đã xoá dữ liệu cột!');
+    }
+
+    function handleTablePaste(event, table) {
+        event.preventDefault();
+        const clipboardData = event.clipboardData || window.clipboardData;
+        const pastedData = clipboardData.getData('text/plain');
+        const rows = pastedData.split(/\r?\n/).filter(row => row.trim() !== '');
+        const startCell = event.target;
+        if (startCell.tagName !== 'TD') return;
+        const startRowIndex = startCell.parentElement.rowIndex - 1; 
+        const startColIndex = startCell.cellIndex;
+        
+        rows.forEach((rowData, i) => {
+            const currentRowIndex = startRowIndex + i;
+            const targetRow = table.tBodies[0].rows[currentRowIndex];
+            if (!targetRow) return;
+            const cellsToPaste = rowData.split('\t');
+            cellsToPaste.forEach((cellData, j) => {
+                const currentColIndex = startColIndex + j;
+                const targetCell = targetRow.cells[currentColIndex];
+                if (targetCell && targetCell.isContentEditable) targetCell.innerText = cellData.trim();
+            });
+        });
+        saveTableData(table.id);
+        showToast('Đã dán và lưu dữ liệu!');
+    }
+
+    function handleTableKeyDown(event) {
+        if (event.key !== 'Enter' || !event.target.isContentEditable) return;
+        event.preventDefault();
+        const currentCell = event.target;
+        const nextRow = currentCell.parentElement.nextElementSibling;
+        if (nextRow) {
+            const nextCell = nextRow.cells[currentCell.cellIndex];
+            if (nextCell && nextCell.isContentEditable) nextCell.focus();
+        }
+    }
+
+    function saveTableData(tableId) {
+        const table = document.getElementById(tableId);
+        if (!table) return;
+        const data = [];
+        const rows = table.tBodies[0].rows;
+        for (let i = 0; i < rows.length; i++) {
+            const cells = rows[i].cells;
+            const rowData = [];
+            for (let j = 1; j < cells.length; j++) rowData.push(cells[j].innerText);
+            data.push(rowData);
+        }
+        try { localStorage.setItem(tableId, JSON.stringify(data)); } catch (e) { console.error("Lỗi localStorage:", e); }
+    }
+
+    async function loadTableDataAdvanced(tableId) { loadTableDataFromStorage(tableId); }
+
+    function loadTableDataFromStorage(tableId) {
+        const table = document.getElementById(tableId);
+        if (!table) return;
+        let dataToLoad = [];
+        try {
+            const savedData = localStorage.getItem(tableId);
+            if (savedData) {
+                const parsedSavedData = JSON.parse(savedData);
+                if (Array.isArray(parsedSavedData)) dataToLoad = parsedSavedData;
+            }
+        } catch (e) { console.error("Lỗi tải localStorage:", e); }
+        
+        const rows = table.tBodies[0].rows;
+        for(let i=0; i < rows.length; i++) {
+            const cells = rows[i].cells;
+            for(let j=1; j < cells.length; j++) cells[j].innerText = '';
+        }
+        for (let i = 0; i < dataToLoad.length && i < rows.length; i++) {
+            const rowData = dataToLoad[i];
+            const cells = rows[i].cells;
+            for (let j = 0; j < rowData.length && (j + 1) < cells.length; j++) cells[j + 1].innerText = rowData[j];
+        }
+    }
+
+    function getStructuredTableData(tableId) {
+        const table = document.getElementById(tableId);
+        if (!table) return [];
+        const data = [];
+        const keys = tableId === 'yearlyDataTable' ? ['Tháng', 'Doanh thu tháng', 'Target tháng'] : ['Ngày', 'DT Tháng này', 'DT Tháng trước'];
+        const rows = table.tBodies[0].rows;
+        for (let i = 0; i < rows.length; i++) {
+            const cells = rows[i].cells;
+            if (!cells || cells.length < 2) continue;
+            const rowObject = {};
+            let hasData = false;
+            rowObject[keys[0]] = cells[0] ? cells[0].innerText.trim() : '';
+            const val1_str = cells[1] ? cells[1].innerText.trim().replace(/,/g, '') : '0';
+            const val1 = parseFloat(val1_str);
+            rowObject[keys[1]] = isNaN(val1) ? 0 : val1;
+            if (!isNaN(val1) && val1 !== 0) hasData = true;
+            
+            if (keys.length > 2 && cells[2]) {
+                 const val2_str = cells[2].innerText.trim().replace(/,/g, '') || '0';
+                 const val2 = parseFloat(val2_str);
+                 rowObject[keys[2]] = isNaN(val2) ? 0 : val2;
+                 if (!isNaN(val2) && val2 !== 0) hasData = true;
+            } else if (keys.length > 2) rowObject[keys[2]] = 0;
+
+            if (hasData) data.push(rowObject);
+        }
+        return data;
+    }
+    
+    function createYearlyDataTable() {
+        const container = document.getElementById('yearlyDataInputContainer');
+        let tableHTML = `<div class="interactive-table-wrapper"><table id="yearlyDataTable" class="interactive-table"><thead><tr><th>Tháng</th><th><div class="th-content"><span>Doanh thu tháng</span><div class="col-actions"><button class="col-action-btn copy" data-table-id="yearlyDataTable" data-col-index="1"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z" /></svg></button><button class="col-action-btn paste" data-table-id="yearlyDataTable" data-col-index="1"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M17,1H4A2,2 0 0,0 2,3V17H4V3H17V1M21,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H21A2,2 0 0,0 23,21V7A2,2 0 0,0 21,5M11.5,17.5H10V14H11.5V17.5M15.5,17.5H14V14H15.5V17.5M19,12H9V9H19V12Z" /></svg></button><button class="col-action-btn clear" data-table-id="yearlyDataTable" data-col-index="1"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2,0 0,0 18,19V7H6V19Z" /></svg></button></div></div></th><th><div class="th-content"><span>Target tháng</span><div class="col-actions"><button class="col-action-btn copy" data-table-id="yearlyDataTable" data-col-index="2"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z" /></svg></button><button class="col-action-btn paste" data-table-id="yearlyDataTable" data-col-index="2"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M17,1H4A2,2 0 0,0 2,3V17H4V3H17V1M21,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H21A2,2 0 0,0 23,21V7A2,2 0 0,0 21,5M11.5,17.5H10V14H11.5V17.5M15.5,17.5H14V14H15.5V17.5M19,12H9V9H19V12Z" /></svg></button><button class="col-action-btn clear" data-table-id="yearlyDataTable" data-col-index="2"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2,0 0,0 18,19V7H6V19Z" /></svg></button></div></div></th></tr></thead><tbody>`;
+        for (let i = 1; i <= 12; i++) tableHTML += `<tr><td>${i}</td><td contenteditable="true"></td><td contenteditable="true"></td></tr>`;
+        tableHTML += `</tbody></table></div><div class="table-io-actions"><button class="action-btn-small import" data-table-id="yearlyDataTable">Nhập</button><button class="action-btn-small export" data-table-id="yearlyDataTable">Xuất</button></div>`;
+        container.innerHTML = tableHTML;
+        const table = document.getElementById('yearlyDataTable');
+        table.addEventListener('input', () => saveTableData('yearlyDataTable'));
+        table.addEventListener('paste', (e) => handleTablePaste(e, table));
+        table.addEventListener('keydown', handleTableKeyDown);
+    }
+
+    function createDailyComparisonTable() {
+        const container = document.getElementById('dailyComparisonInputContainer');
+        let tableHTML = `<div class="interactive-table-wrapper"><table id="dailyComparisonTable" class="interactive-table"><thead><tr><th>Ngày</th><th><div class="th-content"><span>DT Tháng này</span><div class="col-actions"><button class="col-action-btn copy" data-table-id="dailyComparisonTable" data-col-index="1"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z" /></svg></button><button class="col-action-btn paste" data-table-id="dailyComparisonTable" data-col-index="1"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M17,1H4A2,2 0 0,0 2,3V17H4V3H17V1M21,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H21A2,2 0 0,0 23,21V7A2,2 0 0,0 21,5M11.5,17.5H10V14H11.5V17.5M15.5,17.5H14V14H15.5V17.5M19,12H9V9H19V12Z" /></svg></button><button class="col-action-btn clear" data-table-id="dailyComparisonTable" data-col-index="1"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2,0 0,0 18,19V7H6V19Z" /></svg></button></div></div></th><th><div class="th-content"><span>DT Tháng trước</span><div class="col-actions"><button class="col-action-btn copy" data-table-id="dailyComparisonTable" data-col-index="2"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z" /></svg></button><button class="col-action-btn paste" data-table-id="dailyComparisonTable" data-col-index="2"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M17,1H4A2,2 0 0,0 2,3V17H4V3H17V1M21,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H21A2,2 0 0,0 23,21V7A2,2 0 0,0 21,5M11.5,17.5H10V14H11.5V17.5M15.5,17.5H14V14H15.5V17.5M19,12H9V9H19V12Z" /></svg></button><button class="col-action-btn clear" data-table-id="dailyComparisonTable" data-col-index="2"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2,0 0,0 18,19V7H6V19Z" /></svg></button></div></div></th></tr></thead><tbody>`;
+        for (let i = 1; i <= 31; i++) tableHTML += `<tr><td>${i}</td><td contenteditable="true"></td><td contenteditable="true"></td></tr>`;
+        tableHTML += `</tbody></table></div><div class="table-io-actions"><button class="action-btn-small import" data-table-id="dailyComparisonTable">Nhập</button><button class="action-btn-small export" data-table-id="dailyComparisonTable">Xuất</button></div>`;
+        container.innerHTML = tableHTML;
+        const table = document.getElementById('dailyComparisonTable');
+        table.addEventListener('input', () => saveTableData('dailyComparisonTable'));
+        table.addEventListener('paste', (e) => handleTablePaste(e, table));
+        table.addEventListener('keydown', handleTableKeyDown);
+    }
+
+    function exportTableData(tableId) {
+        const table = document.getElementById(tableId);
+        if (!table) return;
+        const data = [];
+        const rows = table.tBodies[0].rows;
+        for (let i = 0; i < rows.length; i++) {
+            const cells = rows[i].cells;
+            const rowData = [];
+            for (let j = 1; j < cells.length; j++) rowData.push(cells[j].innerText.trim());
+            data.push(rowData);
+        }
+        const jsonString = JSON.stringify(data, null, 2);
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${tableId}_data.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast('Đã xuất dữ liệu!');
+    }
+
+    function importTableData(tableId) {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        input.onchange = e => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = readerEvent => {
+                try {
+                    const content = readerEvent.target.result;
+                    const dataToLoad = JSON.parse(content);
+                    if (!Array.isArray(dataToLoad)) throw new Error('Định dạng JSON không hợp lệ.');
+                    const table = document.getElementById(tableId);
+                    if (!table) return;
+                    const tableRows = table.tBodies[0].rows;
+                    for (let i = 0; i < dataToLoad.length && i < tableRows.length; i++) {
+                        const rowData = dataToLoad[i];
+                        if (!Array.isArray(rowData)) continue;
+                        const cells = tableRows[i].cells;
+                        for (let j = 0; j < rowData.length && (j + 1) < cells.length; j++) {
+                            if (cells[j + 1] && cells[j + 1].isContentEditable) cells[j + 1].innerText = rowData[j];
+                        }
+                    }
+                    saveTableData(tableId);
+                    showToast('Đã nhập dữ liệu thành công!');
+                } catch (err) { console.error(err); showToast(`Lỗi: ${err.message}`, true); }
+            };
+            reader.readAsText(file, 'UTF-8');
+        };
+        input.click();
+    }
+    
+    function exportAllData() {
+        try {
+            const allData = {
+                mainData: document.getElementById('mainDataInput').value || '',
+                contestData: document.getElementById('contestDataInput').value || '',
+                yearlyData: JSON.parse(localStorage.getItem('yearlyDataTable') || '[]'),
+                dailyData: JSON.parse(localStorage.getItem('dailyComparisonTable') || '[]')
+            };
+            const jsonString = JSON.stringify(allData, null, 2);
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `BK_DMX_FullBackup_${new Date().toISOString().slice(0,10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast('Đã xuất toàn bộ dữ liệu thành công!');
+        } catch (err) { console.error(err); showToast('Lỗi khi xuất dữ liệu.', true); }
+    }
+
+    function importAllData() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        input.onchange = e => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = readerEvent => {
+                try {
+                    const content = readerEvent.target.result;
+                    const parsedData = JSON.parse(content);
+                    if (parsedData.mainData !== undefined) {
+                         document.getElementById('mainDataInput').value = parsedData.mainData;
+                         localStorage.setItem('luyKeMainData', parsedData.mainData);
+                    }
+                    if (parsedData.contestData !== undefined) {
+                         document.getElementById('contestDataInput').value = parsedData.contestData;
+                         localStorage.setItem('luyKeContestData', parsedData.contestData);
+                    }
+                    if (parsedData.yearlyData) {
+                        localStorage.setItem('yearlyDataTable', JSON.stringify(parsedData.yearlyData));
+                        loadTableDataFromStorage('yearlyDataTable');
+                    }
+                    if (parsedData.dailyData) {
+                        localStorage.setItem('dailyComparisonTable', JSON.stringify(parsedData.dailyData));
+                        loadTableDataFromStorage('dailyComparisonTable');
+                    }
+                    showToast('Đã nhập toàn bộ dữ liệu thành công!');
+                } catch (err) { console.error(err); showToast(`Lỗi: File không hợp lệ.`, true); }
+            };
+            reader.readAsText(file, 'UTF-8');
+        };
+        input.click();
+    }
+
+    var VIBRANT_PALETTE = ['#108AB1', '#06D7A0', '#FFD167', '#F78C6A', '#F04770', '#073A4B'];
+    var formatNumber = (num, decimals = 0) => {
+        const number = parseFloat(num);
+        return isNaN(number) ? '' : number.toLocaleString('vi-VN', { maximumFractionDigits: decimals });
+    };
+    var getColor = (value, threshold1 = 50, threshold2 = 100) => value < threshold1 ? '#F04770' : value < threshold2 ? '#F78C6A' : '#06D7A0';
+    
+    function showToast(message, isError = false) {
+        const toast = document.createElement('div');
+        toast.className = 'toast-notification';
+        if (isError) toast.classList.add('error');
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.classList.add('show'), 10);
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.parentNode && toast.parentNode.removeChild(toast), 500);
+        }, 3000);
+    }
+
+    function parseDate(dateString) {
+        if (!dateString) return null;
+        const [year, month, day] = dateString.split('-').map(Number);
+        return new Date(year, month - 1, day);
+    }
+    
+    function parseAllContestData(text) { 
+        const blocks = text.trim().split(/\n\s*\n/); 
+        return blocks.map(block => parseSingleContestBlock(block)).filter(b => b.rows.length > 0); 
+    }
+
+    function parseSingleContestBlock(blockText) { 
+        const lines = blockText.trim().split('\n').filter(l => l.trim() !== ''); 
+        if (lines.length < 1) return { headers: [], rows: [] }; 
+        const headers = lines[0].split('\t').map(h => h.trim()); 
+        const rows = lines.slice(1).map(line => line.split('\t').map(cell => cell.trim())); 
+        return { headers, rows }; 
+    }
+    
+    const CONTEST_CATEGORY_FILTER_KEY = 'contestCategoryFilter_v2';
+    const CONTEST_CATEGORY_HISTORY_KEY = 'contestCategoryHistory_v2'; // NEW KEY FOR HISTORY
+    let allContestCategories = [];
+    let currentSelectedCategories = [];
+
+    function loadContestCategoryFilter(allNames) {
+        try {
+            const savedFilter = localStorage.getItem(CONTEST_CATEGORY_FILTER_KEY);
+            if (savedFilter) {
+                const parsedFilter = JSON.parse(savedFilter);
+                currentSelectedCategories = parsedFilter.filter(name => allNames.includes(name));
+                return currentSelectedCategories;
+            }
+        } catch (e) { console.error(e); }
+        currentSelectedCategories = [...allNames];
+        return currentSelectedCategories;
+    }
+
+    function saveContestCategoryFilter(selectedNames) {
+        try { localStorage.setItem(CONTEST_CATEGORY_FILTER_KEY, JSON.stringify(selectedNames)); } catch (e) { console.error(e); }
+        currentSelectedCategories = selectedNames;
+    }
+    
+    function getContestCategoriesToDisplay() {
+        const isSelectAllChecked = document.getElementById('selectAllContestCategories')?.checked ?? true;
+        // FIX: Do not default to 'All' if selection is empty, UNLESS 'Select All' checkbox is checked.
+        // This prevents the issue where unchecking 'Select All' resulted in showing 'All' again because the list became empty.
+        if (isSelectAllChecked) return allContestCategories;
+        return currentSelectedCategories;
+    }
+
+    function getUniqueContestCategories(processedContest) {
+        if (!processedContest || !processedContest.all) return [];
+        return Array.from(new Set(processedContest.all.map(item => item.name))).sort();
+    }
+    
+    function renderCategoryChecklist(categories, selectedNames) {
+        const checklist = document.getElementById('categoryChecklist');
+        if (!checklist) return;
+        checklist.innerHTML = `<label><input type="checkbox" id="checkAllModalCategories" ${categories.length === selectedNames.length ? 'checked' : ''}>**Chọn tất cả**</label><hr style="margin: 5px 0;">`;
+        categories.forEach(name => {
+            const isChecked = selectedNames.includes(name);
+            checklist.innerHTML += `<label><input type="checkbox" data-category-name="${name}" ${isChecked ? 'checked' : ''}>${name}</label>`;
+        });
+        const checkAll = document.getElementById('checkAllModalCategories');
+        if (checkAll) {
+            checkAll.addEventListener('change', (e) => {
+                checklist.querySelectorAll('input[type="checkbox"]').forEach(input => {
+                    if (input.id !== 'checkAllModalCategories') input.checked = e.target.checked;
+                });
+            });
+        }
+    }
+
+    function getContestDataForComparison(dateKey) {
+        try {
+            const savedData = localStorage.getItem(`contestDataMap_${dateKey}`);
+            return savedData ? JSON.parse(savedData) : {};
+        } catch (e) { console.error(e); return {}; }
+    }
+
+    function saveCurrentContestData(dateKey) {
+        const contestDataFromTextarea = document.getElementById('contestDataInput').value;
+        if (!contestDataFromTextarea.trim()) { showToast('Không có dữ liệu thi đua để lưu.', true); return; }
+        const allContests = parseAllContestData(contestDataFromTextarea);
+        const processedItems = processFullContestData(allContests, 1).all; 
+        const dataMap = processedItems.reduce((map, item) => { map[item.name.toLowerCase()] = item.actual; return map; }, {});
+        try {
+            localStorage.setItem(`contestDataMap_${dateKey}`, JSON.stringify(dataMap));
+            showToast(`Đã lưu dữ liệu thi đua ngày ${dateKey} thành công!`);
+        } catch (e) { console.error(e); showToast('Lỗi khi lưu dữ liệu thi đua.', true); }
+    }
+
+    function processFullContestData(allContests, daysRemaining) {
+        let processedItems = [];
+        if (!allContests || allContests.length === 0) return { all: [], veDich:[], canCoGwang:[], canTapTrung:[], baoDong:[], onTrack:[], behind:[] };
+        allContests.forEach(contest => {
+            const percentIndex = contest.headers.findIndex(h => h.toLowerCase().includes('% ht dự kiến') || h.toLowerCase().includes('%ht'));
+            const actualIndex = contest.headers.findIndex(h => h.toLowerCase().includes('thực hiện') || h.toLowerCase().includes('dtqđ') || h.toLowerCase().includes('sllk') || h.toLowerCase().includes('dtlk'));
+            const targetIndex = contest.headers.findIndex(h => h.toLowerCase().includes('target'));
+            if (percentIndex === -1 || actualIndex === -1 || targetIndex === -1) return;
+            const items = contest.rows.filter(row => row.length > 1 && row[0].toLowerCase() !== 'tổng' && row[0].toLowerCase() !== 'ngành hàng');
+            items.forEach(row => {
+                const actual = parseFloat(row[actualIndex].replace(/,/g, '')) || 0;
+                const target = parseFloat(row[targetIndex].replace(/,/g, '')) || 0;
+                const remaining = target - actual;
+                processedItems.push({
+                    name: row[0],
+                    percentProjected: parseFloat(row[percentIndex]) || 0,
+                    percentActual: target > 0 ? (actual / target * 100) : 0,
+                    actual, target, remaining,
+                    dailyTarget: remaining > 0 && daysRemaining > 0 ? remaining / daysRemaining : 0,
+                });
+            });
+        });
+        const sortedItems = processedItems.sort((a,b) => b.percentProjected - a.percentProjected);
+        return {
+            all: sortedItems,
+            onTrack: sortedItems.filter(p => p.percentProjected >= 100),
+            behind: sortedItems.filter(p => p.percentProjected < 100)
+        };
+    }
+    
+    document.addEventListener('DOMContentLoaded', () => {
+        Chart.register(ChartDataLabels);
+        Chart.defaults.color = 'var(--text-muted)';
+        Chart.defaults.font.family = 'system-ui, -apple-system, sans-serif';
+        Chart.defaults.font.weight = '600';
+        createYearlyDataTable();
+        createDailyComparisonTable();
+        loadTableDataAdvanced('yearlyDataTable');
+        loadTableDataAdvanced('dailyComparisonTable');
+        setupLuyKeTab();
+        setupSmartPasteButtons();
+        document.getElementById('exportAllBtn').addEventListener('click', exportAllData);
+        document.getElementById('importAllBtn').addEventListener('click', importAllData);
+
+        document.body.addEventListener('click', function(e) {
+            const colButton = e.target.closest('.col-action-btn');
+            if (colButton) {
+                const tableId = colButton.dataset.tableId;
+                const colIndex = parseInt(colButton.dataset.colIndex, 10);
+                if (colButton.classList.contains('copy')) copyColumnData(tableId, colIndex);
+                else if (colButton.classList.contains('paste')) pasteColumnData(tableId, colIndex);
+                else if (colButton.classList.contains('clear')) clearColumnData(tableId, colIndex);
+                return; 
+            }
+            const ioButton = e.target.closest('.action-btn-small');
+            if (ioButton) {
+                const tableId = ioButton.dataset.tableId;
+                if (ioButton.classList.contains('import')) importTableData(tableId);
+                else if (ioButton.classList.contains('export')) exportTableData(tableId);
+                return;
+            }
+        });
+
+        try {
+            document.getElementById('mainDataInput').value = localStorage.getItem('luyKeMainData') || '';
+            document.getElementById('contestDataInput').value = localStorage.getItem('luyKeContestData') || '';
+        } catch (e) { console.error(e); showToast("Không thể truy cập bộ nhớ cục bộ.", true); }
+        
+        // New Event Listeners for Import/Export in Modal
+        document.getElementById('btnCopyCategoryList').addEventListener('click', () => {
+            const json = JSON.stringify(currentSelectedCategories);
+            document.getElementById('categoryExportImportArea').value = json;
+            document.getElementById('categoryExportImportArea').select();
+            document.execCommand('copy');
+            showToast('Đã sao chép danh sách ngành hàng!');
+        });
+        
+        document.getElementById('btnApplyCategoryList').addEventListener('click', () => {
+            try {
+                const json = document.getElementById('categoryExportImportArea').value;
+                if(!json.trim()) { showToast('Vui lòng dán danh sách vào.', true); return; }
+                const parsed = JSON.parse(json);
+                if(!Array.isArray(parsed)) throw new Error('Dữ liệu không hợp lệ');
+                
+                currentSelectedCategories = parsed;
+                // Re-render checkmarks
+                renderCategoryChecklist(allContestCategories, currentSelectedCategories);
+                showToast('Đã nhập danh sách ngành hàng! Hãy nhấn "Áp dụng Bộ lọc".');
+            } catch(e) {
+                console.error(e);
+                showToast('Lỗi định dạng JSON.', true);
+            }
+        });
+    });
+
+    let allChartsLuyKe = [];
+    const destroyAllChartsLuyKe = () => { allChartsLuyKe.forEach(chart => chart && chart.destroy()); allChartsLuyKe = []; };
+
+    function getInitialComparisonDates() {
+        const today = new Date();
+        const yesterday = new Date(today);
+        yesterday.setDate(today.getDate() - 1);
+        const format = (date) => date.toISOString().split('T')[0];
+        return { current: format(today), previous: format(yesterday) };
+    }
+
+    function parseLuyKeData(text) { 
+        const headers = [ "Nhóm ngành hàng", "Số lượng", "DTQĐ", "Target (QĐ)", "Lãi gộp QĐ", "% HT Target (QĐ)", "+/- DTCK Tháng (QĐ)", "Đơn giá", "DT Trả Góp", "Tỷ Trọng Trả Góp" ]; 
+        const rawLines = text.trim().split('\n'); 
+        const dataRows = rawLines[0].toLowerCase().includes('nhóm ngành hàng') ? rawLines.slice(1) : rawLines; 
+        return dataRows.map(line => { 
+            const values = line.split('\t'); 
+            const rowObject = {}; 
+            headers.forEach((header, index) => { 
+                const valueStr = values[index] || '0'; 
+                if (header === "Nhóm ngành hàng") rowObject[header] = valueStr.trim();
+                else rowObject[header] = parseFloat(valueStr.replace(/,/g, '').replace(/%/, '')) || 0; 
+            }); 
+            return rowObject; 
+        }); 
+    }
+
+    function renderLuyKeKPIs(kpis, daysUsed, daysInMonth, yearlyData, reportDate) {
+        const progressPercentDate = (daysUsed / daysInMonth) * 100;
+        document.getElementById('progress-fill-date').style.width = `${progressPercentDate}%`;
+        document.getElementById('progress-text-date').textContent = `Đã qua ${daysUsed}/${daysInMonth} ngày`;
+        document.getElementById('progress-summary-date').textContent = `${formatNumber(progressPercentDate, 1)}%`;
+        
+        const progressPercentTarget = kpis.htTarget > 100 ? 100 : kpis.htTarget;
+        const progressFillTarget = document.getElementById('progress-fill-target');
+        progressFillTarget.style.width = `${progressPercentTarget}%`;
+        progressFillTarget.style.backgroundColor = getColor(kpis.htTarget);
+        document.getElementById('progress-text-target').textContent = `${formatNumber(kpis.htTarget, 1)}%`;
+        document.getElementById('progress-summary-target').textContent = `${formatNumber(kpis.luyKe)} / ${formatNumber(kpis.target)}`;
+        
+        const kpiContainer = document.getElementById('kpi-group-container');
+        const today = new Date();
+        const currentMonth = reportDate.getMonth() + 1;
+        const dayOfWeek = today.getDay();
+
+        const doanhThuConLai = kpis.target - kpis.luyKe;
+        const doanhThuConLaiDisplay = doanhThuConLai <= 0 ? '🏆' : `${formatNumber(doanhThuConLai, 0)} Triệu`;
+        const doanhThuConLaiColor = doanhThuConLai <= 0 ? 'var(--success-color)' : 'var(--text-primary)';
+        const iconDoanhThuConLai = doanhThuConLai <= 0 
+            ? '<path fill="currentColor" d="M19.5,2H4.5A2.5,2.5 0 0,0 2,4.5V7H4V18A4,4 0 0,0 8,22H16A4,4 0 0,0 20,18V7H22V4.5A2.5,2.5 0 0,0 19.5,2M18,7V18A2,2 0 0,1 16,20H8A2,2 0 0,1 6,18V7Z"/>' 
+            : '<path fill="currentColor" d="M13,9H11V4H13V9M12,13.5A1.5,1.5 0 0,1 10.5,12A1.5,1.5 0 0,1 12,10.5A1.5,1.5 0 0,1 13.5,12A1.5,1.5 0 0,1 12,13.5M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12C22,6.48 17.5,2 12,2Z"/>';
+
+        const yearlyTargetTotal = yearlyData.filter(row => parseInt(row['Tháng']) <= currentMonth).reduce((sum, row) => sum + (row['Target tháng'] || 0), 0);
+        const pastMonthsActual = yearlyData.filter(row => parseInt(row['Tháng']) < currentMonth).reduce((sum, row) => sum + (row['Doanh thu tháng'] || 0), 0);
+        const yearlyActualTotal = pastMonthsActual + kpis.dtDuKien;
+        const yearlyPercent = yearlyTargetTotal > 0 ? (yearlyActualTotal / yearlyTargetTotal * 100) : 0;
+        const yearlyRemaining = yearlyTargetTotal - yearlyActualTotal;
+        const daysRemainingInMonth = daysInMonth - today.getDate() + 1;
+        const mucTieuTraNoNgay = daysRemainingInMonth > 0 ? Math.max(0, (kpis.dtDuKien + yearlyRemaining - kpis.luyKe) / daysRemainingInMonth) : 0;
+        
+        const mucTieuKyVongThang = kpis.target / daysInMonth;
+        let mucTieuNgayKyVong = Math.max(mucTieuKyVongThang, kpis.mucTieuNgay);
+        let kyVongLabel = "Mục tiêu ngày kỳ vọng";
+        if (dayOfWeek === 0 || dayOfWeek === 6) { mucTieuNgayKyVong *= 2; kyVongLabel += " (x2 T7/CN)"; }
+
+        kpiContainer.innerHTML = `<div class="kpi-group-card"><div class="kpi-group-header blue"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/></svg>TIẾN ĐỘ THÁNG</div><div class="kpi-group-body"><div class="kpi-item"><span class="kpi-label"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v-2h-2z"/></svg>Target tháng</span><span class="kpi-value">${formatNumber(kpis.target, 0)} Triệu</span></div><div class="kpi-item"><span class="kpi-label"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M4 18h16v-2H4v2zm0-5h16v-2H4v2zm0-5h16V6H4v2z"/></svg>Luỹ kế</span><span class="kpi-value">${formatNumber(kpis.luyKe, 0)} Triệu</span></div><div class="kpi-item"><span class="kpi-label"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>% Thực hiện</span><span class="kpi-value">${formatNumber(kpis.htTarget, 2)}%</span></div><div class="kpi-item"><span class="kpi-label"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/></svg>DT dự kiến</span><span class="kpi-value">${formatNumber(kpis.dtDuKien, 0)} Triệu</span></div><div class="kpi-item"><span class="kpi-label"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>% HT dự kiến</span><span class="kpi-value" style="color: ${getColor(kpis.htDuKien)}">${formatNumber(kpis.htDuKien, 2)}%</span></div></div></div><div class="kpi-group-card"><div class="kpi-group-header orange"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M11 2v9h9a9 9 0 00-9-9zm2 1.08a7 7 0 016.92 6.92H13V3.08zM4 12a8 8 0 018-8v8H4zm9 8a8 8 0 01-8-8h8v8z"/></svg>PHÂN TÍCH CHI TIẾT</div><div class="kpi-group-body"><div class="kpi-item"><span class="kpi-label"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,9L8,13H11V17H13V13H16L12,9Z"/></svg>Mục tiêu ngày</span><span class="kpi-value">${formatNumber(kpis.mucTieuNgay, 0)} Triệu</span></div><div class="kpi-item"><span class="kpi-label"><svg fill="currentColor" viewBox="0 0 24 24">${iconDoanhThuConLai}</svg>Doanh thu còn lại</span><span class="kpi-value" style="color: ${doanhThuConLaiColor}; font-size: ${doanhThuConLai <= 0 ? '1.8em' : '1.15em'}">${doanhThuConLaiDisplay}</span></div><div class="kpi-item"><span class="kpi-label"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>% Tăng trưởng</span><span class="kpi-value" style="color: ${kpis.growthRate >= 0 ? '#06D7A0' : '#F04770'}">${kpis.growthRate >= 0 ? '▲' : '▼'} ${formatNumber(Math.abs(kpis.growthRate), 2)}%</span></div><div class="kpi-item"><span class="kpi-label"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>± DT cùng kỳ</span><span class="kpi-value" style="color: ${kpis.chenhLech >= 0 ? '#06D7A0' : '#F04770'}">${kpis.chenhLech >= 0 ? '▲' : '▼'} ${formatNumber(Math.abs(kpis.chenhLech), 0)}</span></div><div class="kpi-item"><span class="kpi-label"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M21,11H12.42A3,3 0 0,1 12,11.58V13.42A3,3 0 0,1 12.42,14H21V16H12.42A3,3 0 0,1 10,18.42V20H8V18.42A3,3 0 0,1 5.58,16H3V14H5.58A3,3 0 0,1 8,11.58V10H10V11.58A3,3 0 0,1 12.42,14H15V12H12.42A3,3 0 0,1 10,9.58V8H8V9.58A3,3 0 0,1 5.58,12H3V10H5.58A3,3 0 0,1 8,7.58V6H10V7.58A3,3 0 0,1 12.42,10H21V11Z"/></svg>Tỷ trọng trả góp</span><span class="kpi-value" style="color: ${kpis.tyTrongTraGop < 20 ? '#F04770' : '#06D7A0'}">${formatNumber(kpis.tyTrongTraGop, 1)}%</span></div></div></div><div class="kpi-group-card"><div class="kpi-group-header red"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M10 20H4V8h6m0 12V8H4a2 2 0 00-2 2v8a2 2 0 002 2h6m8-14h-4a2 2 0 00-2 2v10a2 2 0 002 2h4a2 2 0 002-2V8a2 2 0 00-2-2m-4 12V8h4v10h-4z"/></svg>NỢ & MỤC TIÊU NỢ</div><div class="kpi-group-body"><div class="kpi-item"><span class="kpi-label"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.5 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-5.5-2.5l7.51-3.49L17.5 6.5 9.99 9.99 6.5 17.5zm5.5-6.6c.61 0 1.1.49 1.1 1.1s-.49 1.1-1.1 1.1-1.1-.49-1.1-1.1.49-1.1 1.1-1.1z"/></svg>DT Nợ năm</span><span class="kpi-value">${formatNumber(yearlyRemaining, 0)} Triệu</span></div><div class="kpi-item"><span class="kpi-label"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>% HT năm</span><span class="kpi-value" style="color: ${getColor(yearlyPercent)}">${formatNumber(yearlyPercent, 2)}%</span></div><div class="kpi-item"><span class="kpi-label"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M13 13h-2V7h2m0 10h-2v-2h2M12 2A10 10 0 1 0 22 12 10 10 0 0 0 12 2Z"/></svg>Mục tiêu trả nợ/ngày</span><span class="kpi-value">${formatNumber(mucTieuTraNoNgay, 0)} Triệu</span></div><div class="kpi-item"><span class="kpi-label"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M12,12.5A1.5,1.5 0 0,1 10.5,11A1.5,1.5 0 0,1 12,9.5A1.5,1.5 0 0,1 13.5,11A1.5,1.5 0 0,1 12,12.5M12,7.2C9.9,7.2 8.2,8.9 8.2,11C8.2,14 12,17.5 12,17.5C12,17.5 15.8,14 15.8,11C15.8,8.9 14.1,7.2 12,7.2M12,2A9,9 0 0,0 3,11C3,15.55 10.04,21.86 11.23,22.77C11.5,23 11.75,23.06 12,23.06C12.25,23.06 12.5,23 12.77,22.77C13.96,21.86 21,15.55 21,11A9,9 0 0,0 12,2Z"/></svg>${kyVongLabel}</span><span class="kpi-value" style="color: var(--danger-color); font-weight: bold;">${formatNumber(mucTieuNgayKyVong, 0)} Triệu</span></div></div></div>`;
+    }
+
+    function hideYearlyRevenueChart() {
+        document.getElementById('yearly-revenue-chart-wrapper').innerHTML = `<h2><svg class="title-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M9,10H7V12H9V10M13,10H11V12H13V10M17,10H15V12H17V10M19,3A2,2 0 0,1 21,5V19A2,2 0 0,1 19,21H5A2,2 0 0,1 3,19V5A2,2 0 0,1 5,3H6V1H8V3H16V1H18V3H19M19,19V8H5V19H19Z"/></svg>Doanh thu Năm</h2><div style="height: 300px; display: flex; justify-content: center; align-items: center; color: var(--danger-color); font-weight: 600;">Không có dữ liệu Năm để hiển thị biểu đồ.</div>`;
+    }
+
+    function hideDailyComparisonChart() {
+        document.getElementById('daily-comparison-chart-wrapper').innerHTML = `<h2><svg class="title-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M19,19H5V8H19M16,1V3H8V1H6V3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5A2,2 0 0,0 19,3H18V1M17,12H12V17H17V12Z"/></svg>So sánh Doanh thu Ngày</h2><div style="height: 300px; display: flex; justify-content: center; align-items: center; color: var(--danger-color); font-weight: 600;">Không có dữ liệu So sánh Ngày để hiển thị biểu đồ.</div>`;
+    }
+
+    function renderLuyKeCategoryTables(mainData, dateCurrentStr, datePreviousStr) {
+        const categoryContainer = document.getElementById('category-table-container');
+        const categoryData = mainData.filter(d => d["Nhóm ngành hàng"] !== "Tổng").sort((a,b) => b.DTQĐ - a.DTQĐ);
+        if (categoryData.length === 0) { categoryContainer.innerHTML = '<h2>Bảng Chi tiết Ngành hàng</h2><p>Không có dữ liệu.</p>'; return; }
+        const dateCurrent = parseDate(dateCurrentStr);
+        const categoryDataWithComparison = categoryData.map(row => {
+            const dtCurrent = row["DTQĐ"], dtPrevious = (datePreviousStr === getInitialComparisonDates().previous) ? dtCurrent * (1 + (Math.random() - 0.5) * 0.1) : dtCurrent;
+            const diff = dtCurrent - dtPrevious;
+            const daysInMonth = new Date(dateCurrent.getFullYear(), dateCurrent.getMonth() + 1, 0).getDate();
+            const daysRemaining = daysInMonth - dateCurrent.getDate();
+            const conLai = row["Target (QĐ)"] - dtCurrent;
+            return { ...row, DTPrevious: dtPrevious, Diff: diff, DiffPercent: dtPrevious > 0 ? (diff/dtPrevious*100) : (diff>0?100:0), MTNgay: conLai > 0 && daysRemaining > 0 ? conLai/daysRemaining : 0, ConLai: conLai };
+        }).sort((a,b) => b.DTQĐ - a.DTQĐ);
+        const midpoint = Math.ceil(categoryDataWithComparison.length / 2);
+        const createTableHtml = (data) => {
+            let tableHtml = `<table><thead><tr><th>Ngành hàng</th><th>DT Lũy kế</th><th>Target</th><th>%HT<span style="font-size:0.8em; font-weight:normal; display:block;">(${dateCurrentStr.replace(/-/g, '/')} vs ${datePreviousStr.replace(/-/g, '/')})</span></th></tr></thead><tbody>`;
+            data.forEach(row => { 
+                const diffBadge = row.DiffPercent !== 0 ? `<span class="growth-badge ${row.Diff > 0 ? 'growth-up' : 'growth-down'}">${row.Diff > 0 ? '▲' : '▼'} ${formatNumber(Math.abs(row.DiffPercent), 1)}%</span>` : `<span class="growth-badge growth-neutral">-</span>`;
+                tableHtml += `<tr><td>${row["Nhóm ngành hàng"]}</td><td>${formatNumber(row["DTQĐ"])}</td><td>${formatNumber(row["Target (QĐ)"])}</td><td>${diffBadge}<div class="bar-wrapper"><div class="bar-info-row" style="margin-top:0; font-size:0.9em;"><span style="font-weight:700;">MT Ngày: ${formatNumber(row.MTNgay, 0)}</span><span style="color:${row.ConLai <= 0 ? 'var(--success-color)' : 'var(--danger-color)'}; font-weight:700;">Còn lại: ${row.ConLai <= 0 ? '0' : formatNumber(row.ConLai, 0)}</span></div><div class="bar-container-row"><div class="bar-track"><div class="bar-fill" style="width: ${Math.min(row["% HT Target (QĐ)"], 100)}%; background-color: ${getColor(row["% HT Target (QĐ)"])};"><span class="bar-percent-text">${formatNumber(row["% HT Target (QĐ)"], 0)}%</span></div></div></div></div></td></tr>`; 
+            });
+            return tableHtml + '</tbody></table>';
+        };
+        categoryContainer.innerHTML = `<h2><svg class="title-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M3,4H21V6H3V4M3,7H21V9H3V7M3,10H21V12H3V10M3,13H21V15H3V13M3,16H21V18H3V16Z"/></svg>Bảng Chi tiết Ngành hàng (Lũy kế đến ${dateCurrent ? dateCurrent.toLocaleDateString('vi-VN') : 'Hiện tại'})</h2><div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px; align-items: start;"><div>${createTableHtml(categoryDataWithComparison.slice(0, midpoint))}</div><div>${categoryDataWithComparison.slice(midpoint).length > 0 ? createTableHtml(categoryDataWithComparison.slice(midpoint)) : ''}</div></div>`;
+        localStorage.setItem('categoryDTMapCurrent', JSON.stringify(categoryDataWithComparison.reduce((map, item) => { map[item["Nhóm ngành hàng"].toLowerCase()] = item["DTQĐ"]; return map; }, {})));
+    }
+
+    function renderYearlyRevenueChart(yearlyData, kpis, reportDate) {
+        const wrapper = document.getElementById('yearly-revenue-chart-wrapper');
+        if (!yearlyData || yearlyData.length === 0 || yearlyData.every(d => (d['Doanh thu tháng'] === 0 && d['Target tháng'] === 0))) { hideYearlyRevenueChart(); return; }
+        wrapper.innerHTML = `<h2><svg class="title-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M9,10H7V12H9V10M13,10H11V12H13V10M17,10H15V12H17V10M19,3A2,2 0 0,1 21,5V19A2,2 0 0,1 19,21H5A2,2 0 0,1 3,19V5A2,2 0 0,1 5,3H6V1H8V3H16V1H18V3H19M19,19V8H5V19H19Z"/></svg>Doanh thu Năm</h2><div class="chart-container" style="height: 300px;"><canvas id="yearlyRevenueChart"></canvas></div>`;
+        const currentMonth = reportDate.getMonth() + 1;
+        new Chart('yearlyRevenueChart', { type: 'bar', data: { labels: yearlyData.map(d => `Th ${d['Tháng']}`), datasets: [{ label: 'Target tháng', data: yearlyData.map(d => d['Target tháng']), backgroundColor: VIBRANT_PALETTE[0], borderColor: VIBRANT_PALETTE[0], borderWidth: 1, datalabels: { color: 'var(--text-muted)', anchor: 'end', align: 'top', formatter: (value) => value > 0 ? formatNumber(value) : '' } }, { label: 'Doanh thu thực hiện', data: yearlyData.map(d => parseInt(d['Tháng']) === currentMonth ? kpis.dtDuKien : d['Doanh thu tháng']), backgroundColor: VIBRANT_PALETTE[4], borderColor: VIBRANT_PALETTE[4], borderWidth: 1, datalabels: { color: 'var(--text-primary)', anchor: 'end', align: 'top', offset: -5, font: { weight: 'bold' }, formatter: (value, context) => { if (!value || value === 0) return ''; const targetValue = context.chart.data.datasets[0].data[context.dataIndex]; return `${formatNumber(value)}\n${targetValue > 0 ? `(${(value / targetValue * 100).toFixed(0)}%)` : ''}`; } } }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' }, datalabels: { display: true } }, scales: { y: { beginAtZero: true, grid: { display: false }, ticks: { callback: function(value) { return formatNumber(value); } } }, x: { grid: { display: false } } } } });
+        allChartsLuyKe.push(Chart.getChart("yearlyRevenueChart"));
+    }
+
+    function renderDailyComparisonChart(dailyData, yearlyData, kpis, reportDate, daysInMonth) {
+        const wrapper = document.getElementById('daily-comparison-chart-wrapper');
+        if (!dailyData || dailyData.length === 0 || dailyData.every(d => (d['DT Tháng này'] === 0 && d['DT Tháng trước'] === 0))) { hideDailyComparisonChart(); return; }
+        wrapper.innerHTML = `<h2><svg class="title-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M19,19H5V8H19M16,1V3H8V1H6V3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5A2,2 0 0,0 19,3H18V1M17,12H12V17H17V12Z"/></svg>So sánh Doanh thu Ngày</h2><div class="chart-container" style="height: 300px;"><canvas id="dailyComparisonChart"></canvas></div>`;
+        const monthTarget = yearlyData.find(row => parseInt(row['Tháng']) === reportDate.getMonth() + 1)?.['Target tháng'] || 0;
+        const dailyTarget = monthTarget > 0 && daysInMonth > 0 ? monthTarget / daysInMonth : (kpis.target > 0 && daysInMonth > 0 ? kpis.target / daysInMonth : 0);
+        const thisMonthRevenue = new Array(daysInMonth).fill(null), lastMonthRevenue = new Array(daysInMonth).fill(null);
+        dailyData.forEach(d => {
+            const dayIndex = parseInt(d['Ngày']) - 1;
+            if (dayIndex >= 0 && dayIndex < daysInMonth) {
+                if (d['DT Tháng này'] > 0 && (dayIndex + 1) <= reportDate.getDate()) thisMonthRevenue[dayIndex] = d['DT Tháng này'];
+                if (d['DT Tháng trước'] > 0) lastMonthRevenue[dayIndex] = d['DT Tháng trước'];
+            }
+        });
+        const weekendColorCallback = (context) => { const dayOfWeek = new Date(reportDate.getFullYear(), reportDate.getMonth(), context.dataIndex + 1).getDay(); return dayOfWeek === 0 || dayOfWeek === 6 ? '#F04770' : '#108AB1'; };
+        new Chart('dailyComparisonChart', { type: 'bar', data: { labels: Array.from({ length: daysInMonth }, (_, i) => `Ngày ${i + 1}`), datasets: [{ label: 'Hiện tại', data: thisMonthRevenue, backgroundColor: weekendColorCallback, order: 2, datalabels: { display: (ctx) => ctx.dataset.data[ctx.dataIndex] !== null, formatter: (value) => formatNumber(value, 0), color: (ctx) => weekendColorCallback(ctx), align: 'top', anchor: 'end', offset: -5, font: { weight: 'bold' } } }, { type: 'line', label: 'Tháng trước', data: lastMonthRevenue, borderColor: '#5A7A84', backgroundColor: '#5A7A84', borderDash: [5, 5], pointRadius: 4, borderWidth: 2, fill: false, tension: 0.1, order: 1, datalabels: { display: (ctx) => ctx.dataset.data[ctx.dataIndex] !== null, formatter: (value) => formatNumber(value, 0), color: '#5A7A84', align: 'bottom', font: { size: 10 } } }, { type: 'line', label: 'Target', data: Array(daysInMonth).fill(dailyTarget), borderColor: '#FFD167', backgroundColor: '#FFD167', borderDash: [10, 5], borderWidth: 2, pointRadius: 0, fill: false, order: 0, datalabels: { display: true, color: '#FFD167', align: 'end', anchor: 'end', formatter: (value, context) => context.dataIndex === Math.floor(daysInMonth / 2) ? formatNumber(value, 0) : '', font: { weight: 'bold' } } }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' }, datalabels: { display: true } }, scales: { y: { beginAtZero: true, grid: { display: false }, ticks: { callback: (value) => formatNumber(value, 0) } }, x: { grid: { display: false }, ticks: { callback: function(val) { return this.getLabelForValue(val).replace('Ngày ',''); }, autoSkip: false, maxRotation: 0, minRotation: 0 } } } } });
+        allChartsLuyKe.push(Chart.getChart("dailyComparisonChart"));
+    }
+    
+    function renderLuyKeCharts(data) {
+        const chartData = data.filter(row => row["DTQĐ"] > 0), growthData = data.filter(r => r.DTQĐ !== 0 || (r["+/- DTCK Tháng (QĐ)"] !== 0 && r["+/- DTCK Tháng (QĐ)"] !== -100));
+        document.getElementById('contribution-chart-wrapper').innerHTML = `<h2><svg class="title-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M11 2v9h9a9 9 0 00-9-9zm2 1.08a7 7 0 016.92 6.92H13V3.08zM4 12a8 8 0 018-8v8H4zm9 8a8 8 0 01-8-8h8v8z"/></svg>Tỷ trọng Doanh thu</h2><div class="chart-container" style="height: 300px;"><canvas id="contributionChart"></canvas></div>`;
+        document.getElementById('growth-chart-wrapper').innerHTML = `<h2><svg class="title-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M22,21H2V3H4V19H22V21M18,17V9H20V17H18M14,17V12H16V17H14M10,17V5H12V17H10M6,17V14H8V17H6Z"/></svg>Tăng/Giảm Cùng kỳ</h2><div class="chart-container" style="height: 300px;"><canvas id="growthDriverChart"></canvas></div>`;
+        
+        const sortedDataByDT = [...chartData].sort((a, b) => b.DTQĐ - a.DTQĐ), totalDT = sortedDataByDT.reduce((s, r) => s + r.DTQĐ, 0), threshold = 0.05 * totalDT;
+        const topCategories = [], otherCategories = [];
+        for (const item of sortedDataByDT) { if (item.DTQĐ >= threshold || topCategories.length < 5) topCategories.push(item); else otherCategories.push(item); }
+        if (otherCategories.length > 0) topCategories.push({ "Nhóm ngành hàng": "Ngành hàng khác", "DTQĐ": otherCategories.reduce((s, r) => s + r.DTQĐ, 0) });
+
+        new Chart('contributionChart', { type: 'doughnut', data: { labels: topCategories.map(d => d["Nhóm ngành hàng"]), datasets: [{ data: topCategories.map(d => d.DTQĐ), backgroundColor: VIBRANT_PALETTE }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, datalabels: { formatter: (v, ctx) => `${ctx.chart.data.labels[ctx.dataIndex]}\n${formatNumber(v, 0)}\n(${(v * 100 / ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0)).toFixed(0)}%)`, color: '#fff', font: { weight: 'bold', size: 12 }, textStrokeColor: 'rgba(0,0,0,0.5)', textStrokeWidth: 2 } } } });
+        allChartsLuyKe.push(Chart.getChart("contributionChart"));
+
+        const calcData = growthData.map(r => ({ name: r["Nhóm ngành hàng"], diff: r.DTQĐ - ((1 + r["+/- DTCK Tháng (QĐ)"] / 100) !== 0 ? r.DTQĐ / (1 + r["+/- DTCK Tháng (QĐ)"] / 100) : 0) })).filter(d => d.diff !== 0).sort((a, b) => a.diff - b.diff);
+        new Chart('growthDriverChart', { type: 'bar', data: { labels: calcData.map(d => d.name), datasets: [{ data: calcData.map(d => d.diff), backgroundColor: calcData.map(d => d.diff > 0 ? VIBRANT_PALETTE[1] : VIBRANT_PALETTE[4]) }] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, datalabels: { color: '#fff', font: { weight: 'bold', size: 12 }, textStrokeColor: 'rgba(0,0,0,0.5)', textStrokeWidth: 2, formatter: (v) => formatNumber(v), anchor: 'center', align: 'center' } }, scales: { x: { grid: { display: false } }, y: { grid: { display: false } } } } });
+        allChartsLuyKe.push(Chart.getChart("growthDriverChart"));
+    }
+
+    function renderLuyKeContestTable(processedContest, oldContestDataMap, dateCurrentStr, datePreviousStr) {
+        const categoriesToDisplay = getContestCategoriesToDisplay();
+        const filteredAll = processedContest.all.filter(item => categoriesToDisplay.includes(item.name));
+        document.getElementById('selectedCategoryCount').textContent = categoriesToDisplay.length === allContestCategories.length ? (allContestCategories.length > 0 ? `(Tất cả: ${allContestCategories.length} nhóm)` : '') : `(${categoriesToDisplay.length}/${allContestCategories.length} nhóm được chọn)`;
+        
+        const wrapper = document.getElementById('contest-table-luyke-wrapper');
+        if (!filteredAll || filteredAll.length === 0) { wrapper.innerHTML = `<h2>Bảng chi tiết Thi đua</h2><p>${document.getElementById('selectAllContestCategories')?.checked ? 'Không có dữ liệu thi đua.' : 'Bạn chưa chọn ngành hàng nào. Vui lòng chọn ngành hàng hoặc tích vào "Hiển thị TẤT CẢ Ngành hàng".'}</p>`; return; }
+
+        const filteredOnTrack = filteredAll.filter(p => p.percentProjected >= 100), filteredBehind = filteredAll.filter(p => p.percentProjected < 100);
+        const progressPercentContest = filteredAll.length > 0 ? (filteredOnTrack.length / filteredAll.length * 100) : 0;
+        const previousContestDataMap = getContestDataForComparison(datePreviousStr);
+
+        const createContestDetailTableCard = (data, title, titleClass, isTopPerformer, startRank) => {
+            if (!data || data.length === 0) return '';
+            return `<div class="contest-group"><h3 class="contest-group-title ${titleClass}">${title} (${data.length} nhóm)</h3><div class="table-responsive"><table class="contest-detail-table"><thead><tr><th class="col-rank">STT</th><th class="col-category">Ngành hàng</th><th colspan="3">Tiến độ / Target / Tăng trưởng <br/>(So sánh DTQĐ ngày ${dateCurrentStr.replace(/-/g, '/')} vs ${datePreviousStr.replace(/-/g, '/')})</th></tr></thead><tbody>${data.map((item, index) => {
+                const diff = item.actual - (previousContestDataMap[item.name.toLowerCase()] || 0);
+                const badgeHtml = diff !== 0 ? `<span class="growth-badge ${diff > 0 ? 'growth-up' : 'growth-down'} growth-badge-float" style="font-size: 0.8em; white-space: nowrap;">${diff > 0 ? '▲' : '▼'} ${formatNumber(Math.abs(diff), 0)}</span>` : '';
+                return `<tr data-category-name="${item.name.toLowerCase()}"><td>${startRank + index}</td><td class="col-category"><div class="tooltip">${isTopPerformer ? '⭐' : (item.percentProjected >= 100 ? '🚀' : '')} ${item.name}<span class="tooltiptext">${item.percentProjected < 50 ? "Cần tập trung cao độ!" : item.percentProjected < 70 ? "Cần cải thiện thêm!" : "Duy trì phong độ tốt!"}</span></div></td><td class="progress-bar-cell" colspan="3"><div class="bar-wrapper" style="margin-bottom: 5px;"><div class="bar-info-row" style="margin-top:0; font-size:0.9em;"><span style="font-weight:700;">MT Ngày: ${formatNumber(item.dailyTarget, 0)}</span><span style="color:${item.remaining <= 0 ? 'var(--success-color)' : 'var(--danger-color)'}; font-weight:700;">Còn lại: ${item.remaining <= 0 ? '0' : formatNumber(item.remaining, 0)}</span></div><div class="bar-wrapper"><div class="bar-container-row"><div class="bar-track"><div class="bar-fill" style="width: ${Math.min(item.percentProjected, 100)}%; background-color: ${getColor(item.percentProjected)};"><span class="bar-percent-text">${formatNumber(item.percentProjected, 0)}%</span>${badgeHtml}</div></div></div><div class="bar-info-row"><span>${item.percentProjected >= 100 ? '🏆' : (item.percentProjected < 50 ? '🔥' : '')} HT: ${formatNumber(item.actual)}</span><span>Target: ${formatNumber(item.target)}</span></div></div></div></td></tr>`;
+            }).join('')}</tbody></table></div></div>`;
+        };
+        
+        wrapper.innerHTML = `<h2><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M13,9V3.5L18.5,9M6,2C4.89,2 4,2.89 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2H6Z" /></svg>Bảng Chi Tiết Thi Đua Ngành Hàng</h2><div class="progress-bar-container" style="padding: 0 0 25px 0;"><div class="progress-labels"><span>Tiến độ Về Đích (Dự kiến)</span><span>${filteredOnTrack.length} / ${filteredAll.length} Nhóm</span></div><div class="progress-track"><div class="progress-fill" style="width: ${progressPercentContest}%; background-color: ${getColor(progressPercentContest, 50, 80)};"></div></div><div class="progress-text-wrapper"><span class="progress-text">${formatNumber(progressPercentContest, 1)}%</span></div></div><div class="contest-split-layout">${createContestDetailTableCard(filteredOnTrack, 'Dự Kiến Hoàn Thành', 'top-performers', true, 1)}${createContestDetailTableCard(filteredBehind, 'Cần Cải Thiện', 'needs-improvement', false, filteredOnTrack.length + 1)}</div>`;
+    }
+    
+    function renderLuyKeSummary(kpis, contest, reportDate) {
+        const container = document.getElementById('summary-report-wrapper-luyke');
+        container.style.display = 'block';
+        if (!kpis) { container.innerHTML = ''; return; }
+        const daysInMonth = new Date(reportDate.getFullYear(), reportDate.getMonth() + 1, 0).getDate();
+        let mucTieuNgayKyVong = Math.max(kpis.target / daysInMonth, kpis.mucTieuNgay);
+        if ([0,6].includes(reportDate.getDay())) mucTieuNgayKyVong *= 2;
+
+        const createSubListWithActual = (items) => {
+            const filteredItems = items.filter(item => getContestCategoriesToDisplay().includes(item.name));
+            if (!filteredItems || filteredItems.length === 0) return { list: '', count: 0 };
+            return { list: filteredItems.map(item => `  - ${item.name} (${formatNumber(item.percentActual, 1)}%)${item.percentActual < 100 && item.dailyTarget > 0 ? `: cần ${formatNumber(Math.max(item.dailyTarget, mucTieuNgayKyVong), 0)}/ngày` : ''}`).join('\n'), count: filteredItems.length };
+        };
+
+        const filteredAllContest = contest.all.filter(item => getContestCategoriesToDisplay().includes(item.name));
+        const sections = [];
+        [ [contest.all.filter(p=>p.percentActual>=100), '✅ ĐÃ VỀ ĐÍCH'], [contest.all.filter(p=>p.percentActual>=80&&p.percentActual<100), '💪 CẦN CỐ GẮNG (HT >80%)'], [contest.all.filter(p=>p.percentActual>=50&&p.percentActual<80), '🎯 CẦN TẬP TRUNG (HT >50%)'], [contest.all.filter(p=>p.percentActual<50), '🚨 BÁO ĐỘNG (HT <50%)'] ].forEach(([items, title]) => {
+            const res = createSubListWithActual(items);
+            if (res.count > 0) sections.push(`${title} (${res.count} nhóm):\n${res.list}`);
+        });
+
+        const summaryText = `📊 BÁO CÁO SỨC KHOẺ SIÊU THỊ - ngày ${reportDate.getDate()}/${reportDate.getMonth() + 1}/${reportDate.getFullYear()} 📊\n-------------------\n- 🎯 Target Tháng: ${formatNumber(kpis.target, 0)}\n- 📈 Luỹ kế đạt: ${formatNumber(kpis.luyKe, 0)} (${formatNumber(kpis.htTarget, 1)}%)\n- 📉 DT còn lại: ${formatNumber(kpis.target - kpis.luyKe, 0)}\n- 🚀 Dự kiến đạt: ${formatNumber(kpis.dtDuKien, 0)} (${formatNumber(kpis.htDuKien, 1)}%)\n- 💹 So với cùng kỳ: ${kpis.chenhLech >= 0 ? 'Tăng' : 'Giảm'} ${formatNumber(Math.abs(kpis.chenhLech), 0)} (${formatNumber(kpis.growthRate, 2)}%)\n- 💳 Tỷ trọng trả góp: ${formatNumber(kpis.tyTrongTraGop, 2)}%\n- 💵 Doanh thu trả góp: ${formatNumber(kpis.doanhThuTraGop, 0)}\n- 💰 Mục tiêu ngày kỳ vọng: ${formatNumber(mucTieuNgayKyVong > 0 ? mucTieuNgayKyVong : 0, 0)}\n- 🏆 Số ngành hàng thi đua dự kiến đạt (Theo bộ lọc): ${filteredAllContest.filter(p => p.percentProjected >= 100).length}/${filteredAllContest.length}\n-------------------\n${sections.join('\n\n')}`;
+
+        container.innerHTML = `<h2><svg class="title-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20M12,19L8,15H10.5V12H13.5V15H16L12,19Z" /></svg>Nhận xét (Dạng văn bản)</h2><textarea class="summary-textarea" readonly>${summaryText}</textarea><button class="action-btn copySummaryBtn" style="width: 100%; max-width: 400px; margin: 15px auto 0 auto;"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z" /></svg>Sao chép Nhận xét</button>`;
+        container.querySelector('.copySummaryBtn').addEventListener('click', (e) => { e.currentTarget.previousElementSibling.select(); document.execCommand('copy'); showToast('Đã sao chép nhận xét!'); });
+        
+        // Render Infographic
+        renderInfographic(kpis, filteredAllContest, reportDate, mucTieuNgayKyVong);
+    }
+    
+    function renderInfographic(kpis, contestItems, reportDate, mucTieuNgayKyVong) {
+        document.getElementById('infographic-report-wrapper').style.display = 'block';
+        const dateStr = `${reportDate.getDate()}/${reportDate.getMonth() + 1}/${reportDate.getFullYear()}`;
+        document.getElementById('info-title-text').textContent = `BÁO CÁO SỨC KHOẺ SIÊU THỊ - ngày ${dateStr}`;
+        
+        // Render Top Stats
+        const topStatsHTML = `
+            <div class="info-stat-col">
+                <div class="info-stat-item"><span class="info-stat-icon">🎯</span>Target Tháng: <span class="info-stat-value" style="color:#333;">${formatNumber(kpis.target)}</span></div>
+                <div class="info-stat-item"><span class="info-stat-icon">📈</span>Luỹ kế đạt: <span class="info-stat-value" style="color:${getColor(kpis.htTarget)};">${formatNumber(kpis.luyKe)} (${formatNumber(kpis.htTarget, 1)}%)</span></div>
+                <div class="info-stat-item"><span class="info-stat-icon">📉</span>DT còn lại: <span class="info-stat-value" style="color:#d9534f;">${formatNumber(kpis.target - kpis.luyKe)}</span></div>
+                <div class="info-stat-item"><span class="info-stat-icon">🚀</span>Dự kiến đạt: <span class="info-stat-value" style="color:${getColor(kpis.htDuKien)};">${formatNumber(kpis.dtDuKien)} (${formatNumber(kpis.htDuKien, 1)}%)</span></div>
+                <div class="info-stat-item"><span class="info-stat-icon">💹</span>So với cùng kỳ: <span class="info-stat-value" style="color:${kpis.chenhLech >= 0 ? '#28a745' : '#dc3545'};">${kpis.chenhLech >= 0 ? 'Tăng' : 'Giảm'} ${formatNumber(Math.abs(kpis.chenhLech))} (${formatNumber(kpis.growthRate, 0)}%)</span></div>
+            </div>
+            <div class="info-stat-col">
+                <div class="info-stat-item"><span class="info-stat-icon">💳</span>Tỷ trọng trả góp: <span class="info-stat-value">${formatNumber(kpis.tyTrongTraGop, 1)}%</span></div>
+                <div class="info-stat-item"><span class="info-stat-icon">💵</span>Doanh thu trả góp: <span class="info-stat-value">${formatNumber(kpis.doanhThuTraGop)}</span></div>
+                <div class="info-stat-item"><span class="info-stat-icon">💰</span>Mục tiêu ngày: <span class="info-stat-value">${formatNumber(mucTieuNgayKyVong)}</span></div>
+                <div class="info-stat-item"><span class="info-stat-icon">🏆</span>Số ngành hàng dự kiến đạt: <span class="info-stat-value">${contestItems.filter(p => p.percentProjected >= 100).length}/${contestItems.length}</span></div>
+            </div>
+        `;
+        document.getElementById('info-top-stats-content').innerHTML = topStatsHTML;
+        
+        // Render 3 Columns
+        const greenItems = contestItems.filter(p => p.percentActual >= 100);
+        const yellowItems = contestItems.filter(p => p.percentActual >= 80 && p.percentActual < 100);
+        const redItems = contestItems.filter(p => p.percentActual < 80); 
+        
+        const createListHTML = (items, showDetail = false) => {
+             if (items.length === 0) return '<div style="padding:10px; color:#777; font-style:italic;">Không có nhóm nào</div>';
+             return items.map(item => {
+                 let detailText = '';
+                 if (showDetail) {
+                     const needed = Math.max(0, item.dailyTarget);
+                     detailText = `: cần ${formatNumber(needed, 1)}/ngày`;
+                 }
+                 return `<div class="info-list-item">• ${item.name} (${formatNumber(item.percentActual, 1)}%)${detailText}</div>`;
+             }).join('');
+        };
+
+        const columnsHTML = `
+            <div class="info-col-card">
+                <div class="info-col-header info-green-header"><svg fill="currentColor" width="20" height="20" viewBox="0 0 24 24"><path d="M9,16.17L4.83,12L3.41,13.41L9,19L21,7L19.59,5.59L9,16.17Z"/></svg> ĐÃ VỀ ĐÍCH (${greenItems.length} nhóm):</div>
+                <div class="info-col-body info-green-body">${createListHTML(greenItems)}</div>
+            </div>
+            <div class="info-col-card">
+                <div class="info-col-header info-yellow-header"><svg fill="currentColor" width="20" height="20" viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm-1 15v-2h2v2h-2zm0-10v6h2V7h-2z"/></svg> CẦN CỐ GẮNG (${yellowItems.length} nhóm):</div>
+                <div class="info-col-body info-yellow-body">${createListHTML(yellowItems, true)}</div>
+            </div>
+            <div class="info-col-card">
+                <div class="info-col-header info-red-header"><svg fill="currentColor" width="20" height="20" viewBox="0 0 24 24"><path d="M12,2L1,21H23M12,6L19.53,19H4.47M11,10V14H13V10M11,16V18H13V16"/></svg> CẦN TẬP TRUNG (${redItems.length} nhóm):</div>
+                <div class="info-col-body info-red-body">${createListHTML(redItems, true)}</div>
+            </div>
+        `;
+        document.getElementById('info-columns-content').innerHTML = columnsHTML;
+    }
+    
+    document.getElementById('captureInfographicBtn').addEventListener('click', () => {
+        const captureElement = document.getElementById('infographic-capture-area');
+        if (captureElement) {
+            html2canvas(captureElement, { useCORS: true, scale: 2 }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `Infographic_BaoCao_${new Date().toLocaleDateString('vi-VN').replace(/\//g,'-')}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            }).catch(err => { showToast('Lỗi khi chụp ảnh infographic.', true); console.error(err); });
+        }
+    });
+
+    function setupLuyKeTab() {
+        const { current, previous } = getInitialComparisonDates();
+        document.getElementById('date-current').value = current;
+        document.getElementById('date-previous').value = previous;
+        document.getElementById('contest-date-current').value = current;
+        document.getElementById('contest-date-previous').value = previous;
+        
+        const selectAllCheckbox = document.getElementById('selectAllContestCategories');
+        if (selectAllCheckbox) {
+            try { selectAllCheckbox.checked = !localStorage.getItem(CONTEST_CATEGORY_FILTER_KEY) || JSON.parse(localStorage.getItem(CONTEST_CATEGORY_FILTER_KEY)).length === 0; } catch (e) { selectAllCheckbox.checked = true; }
+        }
+
+        document.getElementById('analyzeBtn').addEventListener('click', () => { 
+            const mainData = document.getElementById('mainDataInput').value;
+            const contestData = document.getElementById('contestDataInput').value;
+            let oldContestDataMap = getContestDataForComparison(previous);
+            try { localStorage.setItem('luyKeMainData', mainData); localStorage.setItem('luyKeContestData', contestData); saveCurrentContestData(current); } catch (e) { console.error(e); }
+            if (!mainData.trim()) { showToast('Vui lòng dán dữ liệu Báo cáo Kinh doanh.', true); return; } 
+            document.getElementById('luyKeInputGrid').style.display = 'none';
+            document.getElementById('showInputsBtnLuyKe').style.display = 'inline-flex';
+            displayLuyKeDashboard(parseLuyKeData(mainData), contestData.trim() ? parseAllContestData(contestData) : [], getStructuredTableData('yearlyDataTable'), getStructuredTableData('dailyComparisonTable'), oldContestDataMap); 
+        });
+
+        document.getElementById('showInputsBtnLuyKe').addEventListener('click', function() {
+            const inputGrid = document.getElementById('luyKeInputGrid');
+            const isHidden = inputGrid.style.display === 'none';
+            inputGrid.style.display = isHidden ? 'grid' : 'none';
+            this.textContent = isHidden ? 'Ẩn Mục Nhập Liệu' : 'Chỉnh sửa Dữ liệu';
+        });
+        
+        document.getElementById('toggleSpecificTablesBtn').addEventListener('click', () => {
+            document.getElementById('specificTablesContainer').classList.toggle('show');
+            if (document.getElementById('specificTablesContainer').classList.contains('show')) document.getElementById('compareCategoryBtn').click(); 
+        });
+
+        document.getElementById('captureBtnLuyKe').addEventListener('click', () => {
+            const dashboardBody = document.getElementById('dashboard-body-luyke');
+            if (dashboardBody.style.display === 'none') { showToast('Chưa có dữ liệu Luỹ kế để chụp ảnh.', true); return; }
+            const tablesAreVisible = document.getElementById('specificTablesContainer').classList.contains('show');
+            const mainContainer = document.querySelector('body');
+            mainContainer.classList.add('capture-mode');
+            setTimeout(() => {
+                html2canvas(tablesAreVisible ? document.getElementById('capture-area-luyke') : document.getElementById('capture-content-luyke'), { useCORS: true, backgroundColor: '#F4F7F9', scale: 2.5 }).then(canvas => {
+                    const link = document.createElement('a');
+                    link.download = `báo cáo luỹ kế ngày ${new Date().toLocaleDateString('vi-VN')}.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                }).catch(err => { showToast('Lỗi khi chụp ảnh.', true); console.error(err); }).finally(() => mainContainer.classList.remove('capture-mode'));
+            }, 100);
+        });
+
+        document.getElementById('compareCategoryBtn').addEventListener('click', () => {
+            const mainData = document.getElementById('mainDataInput').value;
+            if (!mainData.trim()) { showToast('Vui lòng dán dữ liệu Báo cáo Kinh doanh.', true); return; } 
+            renderLuyKeCategoryTables(parseLuyKeData(mainData), document.getElementById('date-current').value, document.getElementById('date-previous').value);
+        });
+        
+        document.getElementById('saveContestDataBtn').addEventListener('click', () => {
+            if (!document.getElementById('contest-date-current').value) { showToast('Vui lòng chọn Ngày hiện tại.', true); return; }
+            saveCurrentContestData(document.getElementById('contest-date-current').value);
+        });
+        
+        document.getElementById('compareContestBtn').addEventListener('click', () => {
+            const contestData = document.getElementById('contestDataInput').value;
+            if (!contestData.trim()) { showToast('Vui lòng dán dữ liệu Thi đua.', true); return; } 
+            
+            // 1. Calculate Date Logic
+            let today = new Date(), reportDate = new Date(today), daysUsed, daysInMonth, daysRemaining;
+            if (today.getDate() === 1) { 
+                const prev = new Date(today.getFullYear(), today.getMonth(), 0); 
+                daysInMonth = prev.getDate(); 
+                daysUsed = prev.getDate(); 
+                daysRemaining = 0; 
+                reportDate = prev; 
+            } else { 
+                daysUsed = today.getDate() - 1; 
+                daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate(); 
+                daysRemaining = daysInMonth - daysUsed; 
+            }
+
+            // 2. Process Contest Data with correct daysRemaining
+            const processedContestData = processFullContestData(contestData.trim() ? parseAllContestData(contestData) : [], daysRemaining);
+            
+            allContestCategories = getUniqueContestCategories(processedContestData);
+            loadContestCategoryFilter(allContestCategories); 
+            
+            // 3. Render Table
+            renderLuyKeContestTable(processedContestData, getContestDataForComparison(document.getElementById('contest-date-previous').value), document.getElementById('contest-date-current').value, document.getElementById('contest-date-previous').value);
+
+            // 4. Get Main Data for KPIs (Needed for Summary/Infographic)
+            const mainDataText = document.getElementById('mainDataInput').value;
+            if (mainDataText.trim()) {
+                const mainData = parseLuyKeData(mainDataText);
+                const totalRow = mainData.find(row => row["Nhóm ngành hàng"] === "Tổng");
+                if (totalRow) {
+                    const luyKe = totalRow["DTQĐ"], target = totalRow["Target (QĐ)"], growthRate = totalRow["+/- DTCK Tháng (QĐ)"], dtDuKien = (daysUsed > 0 ? (luyKe / daysUsed) : 0) * daysInMonth;
+                    const mainKpis = { luyKe, target, htTarget: luyKe > 0 && target > 0 ? (luyKe/target*100) : 0, growthRate, dtDuKien, htDuKien: target > 0 ? (dtDuKien / target * 100) : 0, chenhLech: luyKe - ((1 + growthRate / 100) !== 0 ? dtDuKien / (1 + growthRate / 100) : 0), mucTieuNgay: daysRemaining > 0 ? (target - luyKe) / daysRemaining : 0, tyTrongTraGop: totalRow["Tỷ Trọng Trả Góp"], doanhThuTraGop: totalRow["DT Trả Góp"] };
+                    
+                    // 5. Render Summary & Infographic
+                    renderLuyKeSummary(mainKpis, processedContestData, reportDate);
+                }
+            }
+        });
+        
+        selectAllCheckbox.addEventListener('change', () => {
+            if (selectAllCheckbox.checked) { 
+                // When Checked: Show ALL
+                currentSelectedCategories = [...allContestCategories]; 
+                saveContestCategoryFilter(currentSelectedCategories); 
+                document.getElementById('openCategorySelectModal').disabled = true; 
+            } else { 
+                // When Unchecked: RESTORE HISTORY
+                document.getElementById('openCategorySelectModal').disabled = false; 
+                
+                let history = [];
+                try {
+                    const storedHistory = localStorage.getItem(CONTEST_CATEGORY_HISTORY_KEY);
+                    if (storedHistory) history = JSON.parse(storedHistory);
+                } catch(e) { console.error(e); }
+                
+                // Filter history to make sure categories still exist
+                history = history.filter(name => allContestCategories.includes(name));
+
+                if (history.length > 0) {
+                    currentSelectedCategories = history;
+                } else {
+                    // If no history (first time), default to empty selection (forces user to pick)
+                    currentSelectedCategories = []; 
+                }
+                saveContestCategoryFilter(currentSelectedCategories);
+            }
+            
+            if (document.getElementById('dashboard-body-luyke').style.display !== 'none') document.getElementById('compareContestBtn').click();
+        });
+        
+        const modal = document.getElementById('categorySelectModal');
+        document.getElementById('openCategorySelectModal').addEventListener('click', () => {
+            if (allContestCategories.length === 0) { showToast('Vui lòng tạo Dashboard trước.', true); return; }
+            renderCategoryChecklist(allContestCategories, currentSelectedCategories);
+            modal.style.display = 'block';
+        });
+        modal.querySelector('.close-btn').onclick = () => modal.style.display = 'none';
+        window.onclick = (event) => { if (event.target === modal) modal.style.display = 'none'; };
+
+        document.getElementById('applyCategoryFilterBtn').addEventListener('click', () => {
+            const selected = [];
+            document.getElementById('categoryChecklist').querySelectorAll('input[type="checkbox"]').forEach(input => { if (input.id !== 'checkAllModalCategories' && input.checked) selected.push(input.dataset.categoryName); });
+            
+            // Save to Active Filter
+            saveContestCategoryFilter(selected);
+            
+            // NEW: Save to History as well (for restore later)
+            try { localStorage.setItem(CONTEST_CATEGORY_HISTORY_KEY, JSON.stringify(selected)); } catch (e) {}
+
+            modal.style.display = 'none';
+            
+            // Logic: If user selected EVERYTHING manually, consider it as "Select All" mode
+            const isAllSelected = selected.length === allContestCategories.length;
+            document.getElementById('selectAllContestCategories').checked = isAllSelected;
+            document.getElementById('openCategorySelectModal').disabled = isAllSelected;
+            
+            showToast('Đã lưu bộ lọc Ngành hàng!');
+            if (document.getElementById('dashboard-body-luyke').style.display !== 'none') document.getElementById('compareContestBtn').click();
+        });
+        
+        function displayLuyKeDashboard(mainData, contestData, yearlyData, dailyData, oldContestDataMap) {
+            document.getElementById('dashboard-body-luyke').style.display = 'block';
+            destroyAllChartsLuyKe();
+            const totalRow = mainData.find(row => row["Nhóm ngành hàng"] === "Tổng");
+            if (!totalRow) throw new Error("Không tìm thấy dòng 'Tổng'.");
+            
+            let today = new Date(), reportDate = new Date(today), daysUsed, daysInMonth, daysRemaining;
+            if (today.getDate() === 1) { const prev = new Date(today.getFullYear(), today.getMonth(), 0); daysInMonth = prev.getDate(); daysUsed = prev.getDate(); daysRemaining = 0; reportDate = prev; } 
+            else { daysUsed = today.getDate() - 1; daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate(); daysRemaining = daysInMonth - daysUsed; }
+
+            const categoryData = mainData.filter(row => row["Nhóm ngành hàng"] !== "Tổng");
+            const luyKe = totalRow["DTQĐ"], target = totalRow["Target (QĐ)"], growthRate = totalRow["+/- DTCK Tháng (QĐ)"], dtDuKien = (daysUsed > 0 ? (luyKe / daysUsed) : 0) * daysInMonth;
+            const mainKpis = { luyKe, target, htTarget: luyKe > 0 && target > 0 ? (luyKe/target*100) : 0, growthRate, dtDuKien, htDuKien: target > 0 ? (dtDuKien / target * 100) : 0, chenhLech: luyKe - ((1 + growthRate / 100) !== 0 ? dtDuKien / (1 + growthRate / 100) : 0), mucTieuNgay: daysRemaining > 0 ? (target - luyKe) / daysRemaining : 0, tyTrongTraGop: totalRow["Tỷ Trọng Trả Góp"], doanhThuTraGop: totalRow["DT Trả Góp"] };
+
+            const processedContestData = processFullContestData(contestData, daysRemaining);
+            allContestCategories = getUniqueContestCategories(processedContestData);
+            loadContestCategoryFilter(allContestCategories); 
+            const selectAllCheckbox = document.getElementById('selectAllContestCategories');
+            if (selectAllCheckbox) { const isAll = currentSelectedCategories.length === allContestCategories.length; selectAllCheckbox.checked = isAll; document.getElementById('openCategorySelectModal').disabled = isAll; }
+
+            document.getElementById('reportTitleLuyKe').textContent = `Báo cáo sức khoẻ siêu thị đến ngày ${reportDate.getDate()}/${reportDate.getMonth() + 1}/${reportDate.getFullYear()}`;
+            renderLuyKeKPIs(mainKpis, daysUsed, daysInMonth, yearlyData, reportDate);
+            renderLuyKeCharts(categoryData);
+            
+            const yearlyCard = document.getElementById('yearly-revenue-chart-wrapper').closest('.card'), dailyCard = document.getElementById('daily-comparison-chart-wrapper').closest('.card'), contributionCard = document.getElementById('contribution-chart-wrapper').closest('.card'), growthCard = document.getElementById('growth-chart-wrapper').closest('.card');
+            const mainChartsColumn = document.getElementById('mainChartGrid').querySelector('.charts-column.main-charts'), sideChartsColumn = document.getElementById('mainChartGrid').querySelector('.charts-column.side-charts');
+            if (yearlyCard) mainChartsColumn.appendChild(yearlyCard); if (dailyCard) mainChartsColumn.appendChild(dailyCard); if (contributionCard) sideChartsColumn.appendChild(contributionCard); if (growthCard) sideChartsColumn.appendChild(growthCard);
+
+            const hasYearlyData = yearlyData && yearlyData.length > 0 && yearlyData.some(d => d['Doanh thu tháng'] > 0 || d['Target tháng'] > 0);
+            const hasDailyData = dailyData && dailyData.length > 0 && dailyData.some(d => d['DT Tháng này'] > 0 || d['DT Tháng trước'] > 0);
+            if (hasYearlyData) renderYearlyRevenueChart(yearlyData, mainKpis, reportDate); else hideYearlyRevenueChart();
+            if (hasDailyData) renderDailyComparisonChart(dailyData, yearlyData, mainKpis, reportDate, daysInMonth); else hideDailyComparisonChart();
+
+            yearlyCard.style.display = hasYearlyData ? 'flex' : 'none'; dailyCard.style.display = hasDailyData ? 'flex' : 'none';
+            const mainGrid = document.getElementById('mainChartGrid');
+            mainGrid.classList.remove('two-cols', 'single-col'); mainChartsColumn.style.display = 'flex'; sideChartsColumn.style.display = 'flex';
+            mainChartsColumn.classList.remove('main-charts-row'); sideChartsColumn.style.gridColumn = ''; sideChartsColumn.style.flexDirection = 'column';
+
+            const numActive = (hasYearlyData ? 1 : 0) + (hasDailyData ? 1 : 0);
+            if (numActive === 2) mainGrid.classList.add('two-cols');
+            else if (numActive === 1) {
+                mainGrid.classList.add('single-col'); mainChartsColumn.classList.add('main-charts-row');
+                if (contributionCard.parentElement !== mainChartsColumn) mainChartsColumn.appendChild(contributionCard);
+                if (growthCard.parentElement !== mainChartsColumn) mainChartsColumn.appendChild(growthCard);
+                sideChartsColumn.style.display = 'none';
+            } else {
+                mainGrid.classList.add('single-col'); mainChartsColumn.style.display = 'none';
+                if (contributionCard.parentElement !== sideChartsColumn) sideChartsColumn.appendChild(contributionCard);
+                if (growthCard.parentElement !== sideChartsColumn) sideChartsColumn.appendChild(growthCard);
+                sideChartsColumn.style.gridColumn = '1 / -1'; sideChartsColumn.style.flexDirection = 'row'; sideChartsColumn.style.flexWrap = 'wrap';
+            }
+
+            const { current, previous } = getInitialComparisonDates();
+            renderLuyKeCategoryTables(categoryData, current, previous);
+            renderLuyKeContestTable(processedContestData, oldContestDataMap, current, previous); 
+            
+            const specificGrid = document.querySelector('#specificTablesContainer .dashboard-layout-grid');
+            if (specificGrid) specificGrid.style.gridTemplateColumns = '1fr';
+            renderLuyKeSummary(mainKpis, processedContestData, reportDate);
+        } 
+    }
+	</script>
+</body>
+</html>
