@@ -855,7 +855,9 @@
                     <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">Sao chép mã dưới đây để chia sẻ hoặc dán mã vào để nhập danh sách:</p>
                     <textarea id="contestImportExportData" style="width: 100%; height: 80px; font-size: 12px; font-family: 'Courier New', Courier, monospace;"></textarea>
                     <div style="display: flex; gap: 10px; margin-top: 10px; justify-content: space-between;">
+                        <!-- ĐÃ SỬA LỖI: Thêm sự kiện click cho nút Xuất -->
                         <button id="exportContestBtn" class="btn btn-small" style="background-color: var(--text-muted); width: 30%;">Sao chép (Xuất)</button>
+                        <!-- ĐÃ SỬA LỖI: Thêm sự kiện click cho nút Nhập -->
                         <button id="importContestBtn" class="btn btn-small" style="background-color: var(--success-color); width: 30%;">Áp dụng (Nhập)</button>
                         <!-- Nút Áp dụng Bộ lọc mới -->
                         <button id="applyContestSelectionBtn" class="btn btn-small" style="background-color: var(--primary-accent); width: 30%;">Áp dụng Bộ lọc</button>
@@ -865,8 +867,10 @@
             <!-- END NEW: Nhập/Xuất Panel -->
             
             <div style="margin-bottom: 15px;">
-                <div class="contest-item" onclick="toggleCheckboxInModal(event, 'modalSelectAllContests')">
-                    <input type="checkbox" id="modalSelectAllContests">
+                <!-- ĐÃ SỬA LỖI: Chỉ gán sự kiện cho hàng item con, loại bỏ sự kiện toggleCheckboxInModal khỏi đây -->
+                <div class="contest-item">
+                    <!-- ĐÃ SỬA LỖI: Thêm sự kiện onclick và stopPropagation để chỉ checkbox hoạt động khi click vào nó -->
+                    <input type="checkbox" id="modalSelectAllContests" onclick="event.stopPropagation(); toggleAllModalContests(this.checked);">
                     <label for="modalSelectAllContests" style="font-weight: bold; color: var(--primary-accent);">**Chọn tất cả**</label>
                 </div>
             </div>
@@ -935,6 +939,7 @@
         document.getElementById('copyCommentsBtn').addEventListener('click', copyComments);
         
         // NEW EVENT LISTENERS for Import/Export & History
+        // ĐÃ SỬA LỖI: Đảm bảo các sự kiện này được gán đúng
         document.getElementById('exportContestBtn').addEventListener('click', exportContestSelection);
         document.getElementById('importContestBtn').addEventListener('click', importContestSelection);
         
@@ -1547,7 +1552,24 @@
 
     // --- NEW: CHỨC NĂNG NHẬP/XUẤT NGÀNH HÀNG ---
     function exportContestSelection() {
-        const data = JSON.stringify(selectedContestHeaders);
+        // HÀM SỬA LỖI: Lấy danh sách đang được tích CHỌN TRỰC TIẾP từ DOM
+        const checkboxes = document.querySelectorAll('#contest-list input[type="checkbox"]');
+        const contestsToExport = Array.from(checkboxes).filter(cb => cb.checked).map(cb => cb.value);
+        
+        // Nếu "Chọn tất cả" đang được tích, ta phải kiểm tra xem có checkbox ngành hàng nào được render không
+        const isSelectAllChecked = document.getElementById('modalSelectAllContests')?.checked;
+        
+        let dataToExport = [];
+
+        if (isSelectAllChecked || contestsToExport.length === allContestHeadersGlobal.length) {
+            // Nếu Chọn tất cả đang được tích (hoặc tất cả đều đã được chọn), xuất toàn bộ danh sách global
+            dataToExport = allContestHeadersGlobal;
+        } else {
+            // Nếu chỉ chọn một vài mục, xuất các mục đã chọn trong DOM
+            dataToExport = contestsToExport;
+        }
+
+        const data = JSON.stringify(dataToExport);
         const textarea = document.getElementById('contestImportExportData');
         textarea.value = data;
         
@@ -1556,13 +1578,14 @@
             textarea.setSelectionRange(0, 99999); 
             document.execCommand('copy');
             window.getSelection().removeAllRanges();
-            showToast('Đã sao chép danh sách ngành hàng (JSON).');
+            showToast(`Đã sao chép ${dataToExport.length} ngành hàng (JSON).`);
         } catch (err) {
             showToast('Không thể sao chép tự động. Vui lòng copy thủ công.');
         }
     }
 
     function importContestSelection() {
+        // HÀM IMPORT CỦA MODAL CHỌN NGÀNH HÀNG
         const text = document.getElementById('contestImportExportData').value;
         try {
             const importedList = JSON.parse(text);
@@ -1578,12 +1601,12 @@
             
             // Nếu có ngành hàng hợp lệ, dùng danh sách đó. Nếu không (nhưng allContestHeadersGlobal có), dùng tất cả.
             selectedContestHeaders = validContests.length > 0 ? validContests : [...allContestHeadersGlobal];
-            localStorage.setItem('selectedContestHeaders', JSON.stringify(selectedContests));
+            localStorage.setItem('selectedContestHeaders', JSON.stringify(selectedContestHeaders));
             
             renderContestListInModal(); // Cập nhật lại list checkbox
             updateModalSelectAll(); // Cập nhật lại checkbox "Chọn tất cả"
             
-            showToast(`Đã nhập thành công ${selectedContests.length} ngành hàng hợp lệ! Vui lòng nhấn 'Áp dụng Bộ lọc'.`);
+            showToast(`Đã nhập thành công ${selectedContestHeaders.length} ngành hàng hợp lệ! Vui lòng nhấn 'Áp dụng Bộ lọc'.`);
 
         } catch (e) {
             showToast(`Lỗi nhập dữ liệu: ${e.message}`);
@@ -1593,12 +1616,12 @@
     
     // NEW FUNCTION: Toggle checkbox when clicking anywhere in the contest-item row
     function toggleCheckboxInModal(event, checkboxId) {
+        // Đảm bảo event.stopPropagation() được gọi để ngăn chặn đóng modal không mong muốn
         event.stopPropagation();
-        const target = event.currentTarget || event.target;
-        const checkbox = target.querySelector(`#${checkboxId}`);
+        const checkbox = document.getElementById(checkboxId);
         if (checkbox) {
             checkbox.checked = !checkbox.checked;
-            updateModalSelectAll();
+            updateModalSelectAll(); // Cập nhật trạng thái "Chọn tất cả"
         }
     }
 
@@ -1608,15 +1631,9 @@
         listContainer.innerHTML = '';
         
         // Cập nhật trạng thái checkbox "Chọn tất cả" trong modal
-        const modalSelectAll = document.getElementById('modalSelectAllContests');
-        modalSelectAll.checked = selectedContestHeaders.length === allContestHeadersGlobal.length && allContestHeadersGlobal.length > 0;
+        updateModalSelectAll();
         
-        // Gắn sự kiện cho checkbox "Chọn tất cả" trong modal
-        modalSelectAll.onclick = (event) => {
-            event.stopPropagation();
-            toggleAllModalContests(event.target.checked);
-        };
-
+        // Cập nhật lại list các checkbox ngành hàng
         allContestHeadersGlobal.forEach(contest => {
             const isChecked = selectedContestHeaders.includes(contest);
             const itemId = `check-${contest.replace(/[^a-zA-Z0-9]/g, '-')}`;
@@ -1646,19 +1663,37 @@
     }
 
     function toggleAllModalContests(select) {
+        // HÀM SỬA LỖI: Cập nhật selectedContestHeaders ngay lập tức
         const checkboxes = document.querySelectorAll('#contest-list input[type="checkbox"]');
+        
+        if (select) {
+            // Nếu chọn tất cả, gán selectedContestHeaders = allContestHeadersGlobal
+            selectedContestHeaders = [...allContestHeadersGlobal];
+        } else {
+            // Nếu bỏ chọn tất cả, gán selectedContestHeaders = []
+            selectedContestHeaders = [];
+        }
+        
         checkboxes.forEach(cb => cb.checked = select);
+        localStorage.setItem('selectedContestHeaders', JSON.stringify(selectedContestHeaders));
     }
     
     function updateModalSelectAll() {
+         // HÀM SỬA LỖI: Kiểm tra trạng thái của selectedContestHeaders và allContestHeadersGlobal
          const allCheckboxes = document.querySelectorAll('#contest-list input[type="checkbox"]');
+         const modalSelectAll = document.getElementById('modalSelectAllContests');
+         
          const checkedCount = Array.from(allCheckboxes).filter(cb => cb.checked).length;
-         document.getElementById('modalSelectAllContests').checked = checkedCount === allCheckboxes.length && checkedCount > 0;
+         
+         // Đồng bộ trạng thái checkbox "Chọn tất cả"
+         if (modalSelectAll) {
+             modalSelectAll.checked = checkedCount === allCheckboxes.length && allCheckboxes.length > 0;
+         }
     }
     
     function applyContestSelection() {
-        const checkboxes = document.querySelectorAll('#contest-list input[type="checkbox"]:checked');
-        const newSelectedContests = Array.from(checkboxes).map(cb => cb.value);
+        const checkboxes = document.querySelectorAll('#contest-list input[type="checkbox"]');
+        const newSelectedContests = Array.from(checkboxes).filter(cb => cb.checked).map(cb => cb.value);
         
         if (newSelectedContests.length === 0) {
             showToast("Vui lòng chọn ít nhất một ngành hàng.");
@@ -1666,7 +1701,7 @@
         }
         
         selectedContestHeaders = newSelectedContests;
-        localStorage.setItem('selectedContestHeaders', JSON.stringify(selectedContests));
+        localStorage.setItem('selectedContestHeaders', JSON.stringify(selectedContestHeaders));
         document.getElementById('contest-selection-modal').style.display = 'none';
         
         updateContestStatusUI();
@@ -1710,6 +1745,8 @@
         
         // Render lại thẻ KPI
         if (finalData.length > 0) renderAllEmployeeCards(finalData);
+        // Render lại Bảng tổng hợp để ẩn/hiện chênh lệch điểm
+        if (finalData.length > 0) renderComprehensiveDashboard(finalData, sortedContestHeadersGlobal, {});
     }
 
     // Cập nhật hàm này để lưu thêm chi tiết nhóm hàng thi đua
@@ -1730,7 +1767,7 @@
                 rank: e.rank,
                 totalScore: e.totalScore,
                 projectedRevenueCompletion: e.projectedRevenueCompletion,
-                ỂoverallProjectedContestCompletion: e.overallProjectedContestCompletion,
+                overallProjectedContestCompletion: e.overallProjectedContestCompletion,
                 // Lưu chi tiết nhóm hàng thi đua
                 contestCompletion: Object.fromEntries(
                     Object.entries(e.contestCompletion).map(([key, value]) => [
@@ -1862,7 +1899,8 @@
                     changeActual: change, // Chênh lệch Lũy kế (giá trị thực)
                     changeProjectedPercent: changeProjectedPercent // Chênh lệch % HT Dự kiến (giá trị phần trăm)
                 };
-            }).filter(c => Math.abs(c.changeActual) > 0); // Chỉ quan tâm thay đổi lũy kế thực tế
+            }).filter(c => Math.abs(c.changeActual) > 0 || Math.abs(c.changeProjectedPercent) > 0.001); // Chỉ quan tâm thay đổi
+
             
             return {
                 ...endEmp,
@@ -1878,6 +1916,8 @@
         
         // Hiển thị trực tiếp kết quả lên thẻ KPI
         renderAllEmployeeCards(finalData);
+        // Render lại Bảng tổng hợp để hiển thị chênh lệch điểm
+        renderComprehensiveDashboard(finalData, sortedContestHeadersGlobal, {});
         
         // Kích hoạt và đặt lại nút toggle
         toggleBtn.textContent = 'Ẩn So sánh';
@@ -1953,7 +1993,7 @@
                 // Nếu là lần đầu, gán selectedContestHeaders = allContestHeadersGlobal (Hiển thị tất cả)
                 if (selectedContestHeaders.length === 0 || selectedContestHeaders.length === allContestHeadersGlobal.length) {
                     selectedContestHeaders = [...allContestHeadersGlobal];
-                    localStorage.setItem('selectedContestHeaders', JSON.stringify(selectedContests));
+                    localStorage.setItem('selectedContestHeaders', JSON.stringify(selectedContestHeaders));
                 }
             }
             
