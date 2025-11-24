@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Lũy kế - v219.2 (Fix Category History)</title>
+    <title>Dashboard Lũy kế - v219.2 (Fix DT Cùng Kỳ & Summary)</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -1164,6 +1164,7 @@
         wrapper.innerHTML = `<h2><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M13,9V3.5L18.5,9M6,2C4.89,2 4,2.89 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2H6Z" /></svg>Bảng Chi Tiết Thi Đua Ngành Hàng</h2><div class="progress-bar-container" style="padding: 0 0 25px 0;"><div class="progress-labels"><span>Tiến độ Về Đích (Dự kiến)</span><span>${filteredOnTrack.length} / ${filteredAll.length} Nhóm</span></div><div class="progress-track"><div class="progress-fill" style="width: ${progressPercentContest}%; background-color: ${getColor(progressPercentContest, 50, 80)};"></div></div><div class="progress-text-wrapper"><span class="progress-text">${formatNumber(progressPercentContest, 1)}%</span></div></div><div class="contest-split-layout">${createContestDetailTableCard(filteredOnTrack, 'Dự Kiến Hoàn Thành', 'top-performers', true, 1)}${createContestDetailTableCard(filteredBehind, 'Cần Cải Thiện', 'needs-improvement', false, filteredOnTrack.length + 1)}</div>`;
     }
     
+    // START: Cập nhật hàm renderLuyKeSummary từ 13.html
     function renderLuyKeSummary(kpis, contest, reportDate) {
         const container = document.getElementById('summary-report-wrapper-luyke');
         container.style.display = 'block';
@@ -1185,7 +1186,7 @@
             if (res.count > 0) sections.push(`${title} (${res.count} nhóm):\n${res.list}`);
         });
 
-        const summaryText = `📊 BÁO CÁO SỨC KHOẺ SIÊU THỊ - ngày ${reportDate.getDate()}/${reportDate.getMonth() + 1}/${reportDate.getFullYear()}`;
+        const summaryText = `📊 BÁO CÁO SỨC KHOẺ SIÊU THỊ - ngày ${reportDate.getDate()}/${reportDate.getMonth() + 1}/${reportDate.getFullYear()} 📊\n-------------------\n- 🎯 Target Tháng: ${formatNumber(kpis.target, 0)}\n- 📈 Luỹ kế đạt: ${formatNumber(kpis.luyKe, 0)} (${formatNumber(kpis.htTarget, 1)}%)\n- 📉 DT còn lại: ${formatNumber(kpis.target - kpis.luyKe, 0)}\n- 🚀 Dự kiến đạt: ${formatNumber(kpis.dtDuKien, 0)} (${formatNumber(kpis.htDuKien, 1)}%)\n- 💹 So với cùng kỳ: ${kpis.chenhLech >= 0 ? 'Tăng' : 'Giảm'} ${formatNumber(Math.abs(kpis.chenhLech), 0)} (${formatNumber(kpis.growthRate, 2)}%)\n- 💳 Tỷ trọng trả góp: ${formatNumber(kpis.tyTrongTraGop, 2)}%\n- 💵 Doanh thu trả góp: ${formatNumber(kpis.doanhThuTraGop, 0)}\n- 💰 Mục tiêu ngày kỳ vọng: ${formatNumber(mucTieuNgayKyVong > 0 ? mucTieuNgayKyVong : 0, 0)}\n- 🏆 Số ngành hàng thi đua dự kiến đạt (Theo bộ lọc): ${filteredAllContest.filter(p => p.percentProjected >= 100).length}/${filteredAllContest.length}\n-------------------\n${sections.join('\n\n')}`;
         
         container.innerHTML = `<h2><svg class="title-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20M12,19L8,15H10.5V12H13.5V15H16L12,19Z" /></svg>Nhận xét (Dạng văn bản)</h2><textarea class="summary-textarea" readonly>${summaryText}</textarea><button class="action-btn copySummaryBtn" style="width: 100%; max-width: 400px; margin: 15px auto 0 auto;"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z" /></svg>Sao chép Nhận xét</button>`;
         container.querySelector('.copySummaryBtn').addEventListener('click', (e) => { e.currentTarget.previousElementSibling.select(); document.execCommand('copy'); showToast('Đã sao chép nhận xét!'); });
@@ -1193,6 +1194,7 @@
         // Render Infographic
         renderInfographic(kpis, filteredAllContest, reportDate, mucTieuNgayKyVong);
     }
+    // END: Cập nhật hàm renderLuyKeSummary từ 13.html
     
     function renderInfographic(kpis, contestItems, reportDate, mucTieuNgayKyVong) {
         document.getElementById('infographic-report-wrapper').style.display = 'block';
@@ -1359,7 +1361,11 @@
                 const totalRow = mainData.find(row => row["Nhóm ngành hàng"] === "Tổng");
                 if (totalRow) {
                     const luyKe = totalRow["DTQĐ"], target = totalRow["Target (QĐ)"], growthRate = totalRow["+/- DTCK Tháng (QĐ)"], dtDuKien = (daysUsed > 0 ? (luyKe / daysUsed) : 0) * daysInMonth;
-                    const mainKpis = { luyKe, target, htTarget: luyKe > 0 && target > 0 ? (luyKe/target*100) : 0, growthRate, dtDuKien, htDuKien: target > 0 ? (dtDuKien / target * 100) : 0, chenhLech: luyKe - ((1 + growthRate / 100) !== 0 ? dtDuKien / (1 + growthRate / 100) : 0), mucTieuNgay: daysRemaining > 0 ? (target - luyKe) / daysRemaining : 0, tyTrongTraGop: totalRow["Tỷ Trọng Trả Góp"], doanhThuTraGop: totalRow["DT Trả Góp"] };
+                    // FIX: Recalculate chenhLech based on LuyKe and GrowthRate. DT Cùng kỳ = DT Luy Ke hiện tại / (1 + GrowthRate/100)
+                    const dtCungKy = (1 + growthRate / 100) !== 0 ? luyKe / (1 + growthRate / 100) : 0;
+                    const chenhLech = luyKe - dtCungKy;
+
+                    const mainKpis = { luyKe, target, htTarget: luyKe > 0 && target > 0 ? (luyKe/target*100) : 0, growthRate, dtDuKien, htDuKien: target > 0 ? (dtDuKien / target * 100) : 0, chenhLech: chenhLech, mucTieuNgay: daysRemaining > 0 ? (target - luyKe) / daysRemaining : 0, tyTrongTraGop: totalRow["Tỷ Trọng Trả Góp"], doanhThuTraGop: totalRow["DT Trả Góp"] };
                     
                     // 5. Render Summary & Infographic
                     renderLuyKeSummary(mainKpis, processedContestData, reportDate);
@@ -1440,7 +1446,12 @@
 
             const categoryData = mainData.filter(row => row["Nhóm ngành hàng"] !== "Tổng");
             const luyKe = totalRow["DTQĐ"], target = totalRow["Target (QĐ)"], growthRate = totalRow["+/- DTCK Tháng (QĐ)"], dtDuKien = (daysUsed > 0 ? (luyKe / daysUsed) : 0) * daysInMonth;
-            const mainKpis = { luyKe, target, htTarget: luyKe > 0 && target > 0 ? (luyKe/target*100) : 0, growthRate, dtDuKien, htDuKien: target > 0 ? (dtDuKien / target * 100) : 0, chenhLech: luyKe - ((1 + growthRate / 100) !== 0 ? dtDuKien / (1 + growthRate / 100) : 0), mucTieuNgay: daysRemaining > 0 ? (target - luyKe) / daysRemaining : 0, tyTrongTraGop: totalRow["Tỷ Trọng Trả Góp"], doanhThuTraGop: totalRow["DT Trả Góp"] };
+            
+            // FIX: Recalculate chenhLech based on LuyKe and GrowthRate. DT Cùng kỳ = DT Luy Ke hiện tại / (1 + GrowthRate/100)
+            const dtCungKy = (1 + growthRate / 100) !== 0 ? luyKe / (1 + growthRate / 100) : 0;
+            const chenhLech = luyKe - dtCungKy;
+
+            const mainKpis = { luyKe, target, htTarget: luyKe > 0 && target > 0 ? (luyKe/target*100) : 0, growthRate, dtDuKien, htDuKien: target > 0 ? (dtDuKien / target * 100) : 0, chenhLech: chenhLech, mucTieuNgay: daysRemaining > 0 ? (target - luyKe) / daysRemaining : 0, tyTrongTraGop: totalRow["Tỷ Trọng Trả Góp"], doanhThuTraGop: totalRow["DT Trả Góp"] };
 
             const processedContestData = processFullContestData(contestData, daysRemaining);
             allContestCategories = getUniqueContestCategories(processedContestData);
