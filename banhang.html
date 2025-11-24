@@ -56,6 +56,9 @@
 
             /* Ngăn ngắt trang */
             .break-inside-avoid { break-inside: avoid; page-break-inside: avoid; }
+            
+            /* Đảm bảo nội dung không cuộn khi in */
+            .no-scroll-on-print { overflow: hidden !important; }
         }
     </style>
 </head>
@@ -73,7 +76,8 @@
                 User: <g><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></g>,
                 Printer: <g><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></g>,
                 RotateCcw: <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 12" />,
-                MessageSquare: <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                MessageSquare: <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />,
+                BookOpen: <path d="M2 20h20v-2H2v2zm18-3H4V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12zM12 15V7" />
             };
 
             return (
@@ -83,35 +87,111 @@
             );
         };
 
-        // --- MAIN APP ---
-        const SalesDashboard = () => {
-            // Dữ liệu mẫu TRẮNG (Chỉ giữ lại tên nhóm hàng)
-            const initialGroups = [
-                { id: 1, name: 'Camera', monthTarget: '', accumulated: '', weekTarget: '', dailyTarget: '', days: { t2: '', t3: '', t4: '', t5: '', t6: '', t7: '', cn: '' } },
-                { id: 2, name: 'Sim', monthTarget: '', accumulated: '', weekTarget: '', dailyTarget: '', days: { t2: '', t3: '', t4: '', t5: '', t6: '', t7: '', cn: '' } },
-                { id: 3, name: 'ICT / LT', monthTarget: '', accumulated: '', weekTarget: '', dailyTarget: '', days: { t2: '', t3: '', t4: '', t5: '', t6: '', t7: '', cn: '' } },
-                { id: 4, name: 'Gia dụng', monthTarget: '', accumulated: '', weekTarget: '', dailyTarget: '', days: { t2: '', t3: '', t4: '', t5: '', t6: '', t7: '', cn: '' } },
-                { id: 5, name: 'Bảo hiểm', monthTarget: '', accumulated: '', weekTarget: '', dailyTarget: '', days: { t2: '', t3: '', t4: '', t5: '', t6: '', t7: '', cn: '' } },
-                { id: 6, name: 'Samsung', monthTarget: '', accumulated: '', weekTarget: '', dailyTarget: '', days: { t2: '', t3: '', t4: '', t5: '', t6: '', t7: '', cn: '' } },
-                { id: 7, name: 'Phụ kiện', monthTarget: '', accumulated: '', weekTarget: '', dailyTarget: '', days: { t2: '', t3: '', t4: '', t5: '', t6: '', t7: '', cn: '' } },
-            ];
+        // --- NEW COMPONENT: Interest Group Card (Các nhóm hàng quan tâm) ---
+        const InterestGroupCard = ({ interestColumns, setInterestColumns }) => {
+            // Chiều cao tối thiểu để đồng bộ với các card sản phẩm khác
+            const minHeightClass = "min-h-[220px] md:min-h-[200px] xl:min-h-[200px]"; 
 
-            // Thông tin chung cũng để trống
-            const initialGeneralInfo = {
-                userName: '',
-                userCode: '',
-                week: '',
-                mainTarget: '',
-                accumulated: '',
-                dailyTarget: '',
-                categoryTarget: '', 
-                dateRange: '',
-                signerTitle: 'ĐMX Savico'
+            const handleChange = (column, value) => {
+                setInterestColumns(prev => ({ ...prev, [column]: value }));
             };
 
+            return (
+                <div className="bg-white rounded-lg shadow-xl overflow-hidden border-2 border-dashed border-blue-300 flex flex-col break-inside-avoid print-no-shadow print:border-blue-500 print:shadow-none">
+                    {/* Card Header */}
+                    <div className="bg-blue-600 text-white p-2 px-3 flex justify-between items-center print:bg-blue-500 print:text-white print:py-1">
+                        <div className="flex items-center gap-2">
+                             <Icon name="BookOpen" size={16} />
+                            <span className="font-bold text-base">Các nhóm hàng quan tâm</span>
+                        </div>
+                    </div>
+
+                    {/* Content Area (2 columns, using grid and 2 separate textareas) */}
+                    <div className={`p-2 flex-grow grid grid-cols-2 gap-2 ${minHeightClass} no-scroll-on-print`}>
+                        
+                        {/* Column 1 */}
+                        <textarea
+                            value={interestColumns.col1}
+                            onChange={(e) => handleChange('col1', e.target.value)}
+                            placeholder="Cột 1: Mục tiêu, kế hoạch..."
+                            className={`w-full h-full p-2 bg-blue-50 rounded-lg border-2 border-blue-100 focus:outline-none focus:border-blue-300 text-slate-700 text-sm resize-none leading-relaxed overflow-hidden print:bg-white print:border-none print:p-0 print:text-xs print-h-auto`}
+                        ></textarea>
+
+                        {/* Column 2 */}
+                        <textarea
+                            value={interestColumns.col2}
+                            onChange={(e) => handleChange('col2', e.target.value)}
+                            placeholder="Cột 2: Ghi chú, kết quả thực hiện..."
+                            className={`w-full h-full p-2 bg-blue-50 rounded-lg border-2 border-blue-100 focus:outline-none focus:border-blue-300 text-slate-700 text-sm resize-none leading-relaxed overflow-hidden print:bg-white print:border-none print:p-0 print:text-xs print-h-auto`}
+                        ></textarea>
+                    </div>
+                    <div className="text-[10px] text-slate-400 p-1 pt-0 text-center">Nội dung không cuộn và được chia thành 2 cột riêng biệt.</div>
+                </div>
+            );
+        };
+
+        // --- DATA SETUP ---
+
+        // 13 nhóm hàng theo yêu cầu
+        const predefinedInterestGroups = [
+            "Bán hàng Samsung", "Bảo hiểm", "Camera", "FE & TPBank", "Homecredit", "Máy lọc nước", "PHỤ KIỆN - ĐỒNG Hồ", 
+            "Sim", "ĐIỆN THOẠI & TABLET ANDROID TRÊN 7 TRIỆU", "Điện thoại Vivo", "Điện tử", "Điện tử & Điện lạnh LG", 
+            "ĐẶC QUYỀN NH MÁY GIẶT, SẤY"
+        ];
+        
+        // Chia 13 nhóm thành 2 cột và đánh số thứ tự
+        const splitAndFormatGroups = (groups) => {
+            const total = groups.length;
+            const mid = Math.ceil(total / 2); // 7 nhóm cho cột 1, 6 nhóm cho cột 2
+            
+            const col1Items = groups.slice(0, mid);
+            const col2Items = groups.slice(mid);
+
+            const formatColumn = (items, startNum) => {
+                return items.map((item, index) => `${startNum + index}. ${item}`).join('\n');
+            };
+
+            const col1Formatted = formatColumn(col1Items, 1);
+            const col2Formatted = formatColumn(col2Items, mid + 1); // Bắt đầu từ 8 (7+1)
+
+            return { col1: col1Formatted, col2: col2Formatted };
+        };
+
+        const defaultInterestContent = splitAndFormatGroups(predefinedInterestGroups);
+
+        // 8 nhóm hàng cố định cho 8 ô còn lại
+        const initialGroups = [
+            { id: 1, name: 'Camera', monthTarget: '', accumulated: '', weekTarget: '', dailyTarget: '', days: { t2: '', t3: '', t4: '', t5: '', t6: '', t7: '', cn: '' } },
+            { id: 2, name: 'Sim', monthTarget: '', accumulated: '', weekTarget: '', dailyTarget: '', days: { t2: '', t3: '', t4: '', t5: '', t6: '', t7: '', cn: '' } },
+            { id: 3, name: 'ICT / LT', monthTarget: '', accumulated: '', weekTarget: '', dailyTarget: '', days: { t2: '', t3: '', t4: '', t5: '', t6: '', t7: '', cn: '' } },
+            // Vị trí thứ 4 (Gia dụng)
+            { id: 4, name: 'Gia dụng', monthTarget: '', accumulated: '', weekTarget: '', dailyTarget: '', days: { t2: '', t3: '', t4: '', t5: '', t6: '', t7: '', cn: '' } },
+            { id: 5, name: 'Bảo hiểm', monthTarget: '', accumulated: '', weekTarget: '', dailyTarget: '', days: { t2: '', t3: '', t4: '', t5: '', t6: '', t7: '', cn: '' } },
+            { id: 6, name: 'Samsung', monthTarget: '', accumulated: '', weekTarget: '', dailyTarget: '', days: { t2: '', t3: '', t4: '', t5: '', t6: '', t7: '', cn: '' } },
+            { id: 7, name: 'Phụ kiện', monthTarget: '', accumulated: '', weekTarget: '', dailyTarget: '', days: { t2: '', t3: '', t4: '', t5: '', t6: '', t7: '', cn: '' } },
+            { id: 8, name: 'Điện thoại', monthTarget: '', accumulated: '', weekTarget: '', dailyTarget: '', days: { t2: '', t3: '', t4: '', t5: '', t6: '', t7: '', cn: '' } },
+        ];
+
+
+        // Thông tin chung cũng để trống
+        const initialGeneralInfo = {
+            userName: '',
+            userCode: '',
+            week: '',
+            mainTarget: '',
+            accumulated: '',
+            dailyTarget: '',
+            categoryTarget: '', 
+            dateRange: '',
+            signerTitle: 'ĐMX Savico'
+        };
+
+        // --- MAIN APP ---
+        const SalesDashboard = () => {
             const [generalInfo, setGeneralInfo] = useState(initialGeneralInfo);
             const [managerComment, setManagerComment] = useState('');
             const [groups, setGroups] = useState(initialGroups);
+            const [interestContent, setInterestContent] = useState(defaultInterestContent); 
 
             // Logic tính tổng (xử lý chuỗi rỗng an toàn)
             const calculateWeeklyTotal = (days) => {
@@ -132,6 +212,97 @@
                     group.id === id ? { ...group, days: { ...group.days, [day]: value } } : group
                 ));
             };
+            
+            // Component GroupCard riêng biệt (trích xuất từ JSX chính)
+            const GroupCard = ({ group }) => (
+                <div key={group.id} className="bg-white rounded-lg shadow-md overflow-hidden border border-slate-100 flex flex-col break-inside-avoid print-no-shadow">
+                    {/* Card Header */}
+                    <div className="bg-slate-800 text-white p-2 px-3 flex justify-between items-center print:bg-slate-200 print:text-black print:py-1">
+                        <input 
+                            value={group.name}
+                            onChange={(e) => handleGroupChange(group.id, 'name', e.target.value)}
+                            className="bg-transparent text-white font-bold text-base focus:outline-none w-3/4 placeholder-slate-400 print:text-black print:placeholder-slate-600"
+                            placeholder="Tên nhóm..."
+                        />
+                        {/* Chỉ cho phép xóa nhóm nếu tổng số nhóm lớn hơn 8 (đã thêm nhóm mới) */}
+                        {groups.length > 8 && (
+                             <button 
+                                onClick={() => removeGroup(group.id)}
+                                className="text-slate-400 hover:text-red-400 transition-colors no-print"
+                                title="Xóa"
+                            >
+                                <Icon name="Trash2" size={16} />
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Targets Mini-Grid */}
+                    <div className="p-2 bg-slate-50 grid grid-cols-2 gap-2 text-center border-b border-slate-200 print:bg-white print:py-1">
+                        <div className="flex flex-col border-r border-slate-200 pr-1">
+                            <span className="text-[8px] text-slate-500 uppercase font-bold">Mục tiêu Tháng</span>
+                            <input 
+                                value={group.monthTarget}
+                                onChange={(e) => handleGroupChange(group.id, 'monthTarget', e.target.value)}
+                                className="w-full text-center text-xs font-semibold text-slate-700 bg-transparent focus:outline-none"
+                                placeholder="..."
+                            />
+                        </div>
+                        <div className="flex flex-col pl-1">
+                            <span className="text-[8px] text-slate-500 uppercase font-bold">Lũy kế</span>
+                            <input 
+                                value={group.accumulated}
+                                onChange={(e) => handleGroupChange(group.id, 'accumulated', e.target.value)}
+                                className="w-full text-center text-xs font-semibold text-blue-600 bg-transparent focus:outline-none"
+                                placeholder="..."
+                            />
+                        </div>
+                        <div className="col-span-2 h-px bg-slate-200 my-0.5"></div>
+                        <div className="flex flex-col border-r border-slate-200 pr-1">
+                            <span className="text-[8px] text-slate-500 uppercase font-bold">Mục tiêu Tuần</span>
+                            <input 
+                                value={group.weekTarget}
+                                onChange={(e) => handleGroupChange(group.id, 'weekTarget', e.target.value)}
+                                className="w-full text-center text-xs font-semibold text-green-600 bg-transparent focus:outline-none"
+                                placeholder="..."
+                            />
+                        </div>
+                        <div className="flex flex-col pl-1">
+                            <span className="text-[8px] text-slate-500 uppercase font-bold text-purple-600">Mục tiêu Ngày</span>
+                            <input 
+                                value={group.dailyTarget}
+                                onChange={(e) => handleGroupChange(group.id, 'dailyTarget', e.target.value)}
+                                className="w-full text-center text-xs font-semibold text-purple-600 bg-transparent focus:outline-none"
+                                placeholder="..."
+                            />
+                        </div>
+                    </div>
+
+                    {/* Daily Inputs */}
+                    <div className="p-2 flex-grow print:py-1">
+                        <div className="grid grid-cols-7 gap-1 mb-1">
+                            {['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map(d => (
+                                <div key={d} className="text-center text-[9px] font-bold text-slate-400">{d}</div>
+                            ))}
+                        </div>
+                        <div className="grid grid-cols-7 gap-1 mb-2">
+                            {Object.keys(group.days).map((day) => (
+                                <input
+                                    key={day}
+                                    type="number"
+                                    value={group.days[day]}
+                                    onChange={(e) => handleDayChange(group.id, day, e.target.value)}
+                                    className="w-full text-center border border-slate-200 rounded py-0.5 text-xs focus:border-blue-500 focus:outline-none"
+                                />
+                            ))}
+                        </div>
+                        <div className="flex justify-between items-center pt-2 border-t border-slate-100 print:pt-1">
+                            <span className="text-[10px] font-bold text-slate-600 uppercase">Tổng kết tuần:</span>
+                            <span className="text-base font-bold text-blue-700">{calculateWeeklyTotal(group.days)}</span>
+                        </div>
+                    </div>
+                </div>
+            );
+
 
             const addGroup = () => {
                 const newId = groups.length > 0 ? Math.max(...groups.map(g => g.id)) + 1 : 1;
@@ -144,7 +315,8 @@
             };
 
             const removeGroup = (id) => {
-                if (window.confirm('Bạn có chắc muốn xóa nhóm này?')) {
+                // Chỉ cho phép xóa nhóm nếu tổng số nhóm lớn hơn 8 (tức là nhóm được thêm mới)
+                if (groups.length > 8 && window.confirm('Bạn có chắc muốn xóa nhóm này?')) {
                     setGroups(groups.filter(g => g.id !== id));
                 }
             };
@@ -153,21 +325,117 @@
                 if (window.confirm('CẢNH BÁO: Bạn muốn xóa TRẮNG toàn bộ thông tin?')) {
                     setGeneralInfo({
                         ...initialGeneralInfo, // Reset về trạng thái rỗng
-                        signerTitle: 'ĐMX Savico'
+                        signerTitle: 'DMM Phó/Trưởng'
                     });
-                    setGroups(groups.map(g => ({
+                    // Reset groups về 8 nhóm mặc định
+                    setGroups(initialGroups.map(g => ({
                         ...g,
                         monthTarget: '', accumulated: '', weekTarget: '', dailyTarget: '',
                         days: { t2: '', t3: '', t4: '', t5: '', t6: '', t7: '', cn: '' }
                     })));
                     setManagerComment('');
+                    setInterestContent(defaultInterestContent); // Reset nội dung nhóm hàng quan tâm về mặc định
                 }
             };
 
             const handlePrint = () => {
                 window.print();
             };
-
+            
+            // Xử lý chèn component InterestGroupCard vào vị trí thứ 5 (index 4)
+            // Hiện tại: [0, 1, 2, 3 (Gia dụng), 4 (BH), 5 (SS), 6 (PK), 7 (ĐT)]
+            // Chèn vào index 4: [0, 1, 2, 3 (Gia dụng), Interest, 4 (BH), 5 (SS), 6 (PK), 7 (ĐT)] -> SAI, vì ID không trùng với index
+            
+            // Logic cũ: Chèn vào index 3 (vị trí Gia dụng): [Camera, Sim, ICT/LT, Interest, Gia dụng, Bảo hiểm, Samsung, Phụ kiện, Điện thoại]
+            // Vị trí mới: Hoán đổi Interest và Gia dụng. Tức là Interest phải nằm ở index 4.
+            const allItems = groups.map(g => ({ type: 'group', data: g }));
+            
+            // CHỈNH SỬA: Chèn vào index 4 (để nằm sau Gia dụng)
+            // Vị trí thứ 4 là Gia dụng (index 3). Vị trí thứ 5 là Bảo hiểm (index 4).
+            // Nếu chèn vào index 4, nó sẽ nằm ở vị trí thứ 5, đẩy Gia dụng (index 3) về vị trí thứ 4.
+            // Để Gia dụng (ID 4) ở index 3 và Interest ở index 4 (trên lưới 3x3)
+            // Cấu trúc hiện tại: [Camera, Sim, ICT/LT, Gia dụng, Bảo hiểm, Samsung, Phụ kiện, Điện thoại]
+            // Cấu trúc mong muốn: [Camera, Sim, ICT/LT, Gia dụng, Interest, Bảo hiểm, Samsung, Phụ kiện, Điện thoại] -> KHÔNG PHẢI
+            // Cấu trúc mong muốn: [Camera, Sim, ICT/LT, Interest, Gia dụng, Bảo hiểm, Samsung, Phụ kiện, Điện thoại] -> TRUNG TÂM.
+            
+            // Yêu cầu: Đổi chỗ ô "Các nhóm hàng quan tâm" (hiện ở index 3) và ô "Gia dụng" (nhóm ID 4, hiện ở index 4).
+            // Ý của bạn là "Các nhóm hàng quan tâm" phải nằm ở vị trí ô "Gia dụng".
+            // Vị trí Gia dụng (ID 4) trên màn hình là: Dòng 2, Cột 1 (index 3)
+            // Vị trí của ô "Các nhóm hàng quan tâm" hiện tại: Dòng 2, Cột 1 (index 3)
+            
+            // Tôi hiểu sai yêu cầu ban đầu. Yêu cầu ban đầu là ô quan tâm nằm ở **trung tâm**, tức là vị trí của ô Gia dụng cũ.
+            // Ô Gia dụng cũ là ô thứ 4.
+            // Bố cục 3x3:
+            // 1, 2, 3
+            // 4, 5, 6
+            // 7, 8, 9
+            //
+            // Vị trí trung tâm (ô 5).
+            //
+            // Ở phiên bản trước, tôi đã chèn ở index 3 (ô thứ 4):
+            // 1. Camera
+            // 2. Sim
+            // 3. ICT/LT
+            // 4. Các nhóm hàng quan tâm <--- Vị trí hiện tại (index 3)
+            // 5. Gia dụng
+            // 6. Bảo hiểm
+            // 7. Samsung
+            // 8. Phụ kiện
+            // 9. Điện thoại
+            
+            // Nếu bạn muốn "Các nhóm hàng quan tâm" ở vị trí Gia dụng (index 4) và Gia dụng ở vị trí Quan tâm (index 3):
+            // Cấu trúc mới:
+            // 1. Camera
+            // 2. Sim
+            // 3. ICT/LT
+            // 4. Gia dụng <--- Vị trí mới
+            // 5. Các nhóm hàng quan tâm <--- Vị trí mới (TRUNG TÂM)
+            // 6. Bảo hiểm
+            // 7. Samsung
+            // 8. Phụ kiện
+            // 9. Điện thoại
+            
+            // Để làm điều này:
+            // 1. Lấy nhóm Gia dụng (ID 4) ra khỏi mảng groups.
+            // 2. Chèn Gia dụng vào mảng allItems ở index 3.
+            // 3. Chèn InterestCard vào mảng allItems ở index 4.
+            
+            // Tuy nhiên, logic chèn hiện tại là:
+            // const allItems = groups.map(g => ({ type: 'group', data: g }));
+            // allItems.splice(3, 0, { type: 'interest', id: 'interest-card' }); 
+            
+            // Nếu tôi giữ nguyên `groups`: [C, S, I, GD, BH, SS, PK, ĐT] (ID 1-8)
+            // `allItems` ban đầu: [C, S, I, GD, BH, SS, PK, ĐT] (8 nhóm)
+            // `allItems.splice(3, 0, Interest)` -> Chèn Interest vào vị trí thứ 4.
+            // `allItems` sau: [C, S, I, Interest, GD, BH, SS, PK, ĐT]
+            
+            // Theo yêu cầu của bạn (dựa trên hình ảnh bạn gửi, ô Gia dụng là ô thứ 5, ô Quan tâm là ô thứ 4):
+            // Vị trí 1, 2, 3
+            // Vị trí 4 (Quan tâm), 5 (Gia dụng), 6 (Bảo hiểm)
+            // Vị trí 7, 8, 9
+            
+            // Yêu cầu mới: "chuyển ô các nhóm hàng quan tâm vào vị trí ô gia dụng, 2 ô đó đổi chỗ cho nhau"
+            // Vị trí Gia dụng hiện tại là index 4.
+            // Vị trí Quan tâm hiện tại là index 3.
+            // Hoán đổi: Quan tâm -> index 4, Gia dụng -> index 3.
+            
+            // Vị trí chèn mới là index 4.
+            const allItemsNew = groups.map(g => ({ type: 'group', data: g }));
+            
+            // Chèn Interest vào index 4.
+            // allItemsNew: [C, S, I, GD, Interest, BH, SS, PK, ĐT]
+            // Vị trí trên màn hình:
+            // Dòng 1: C, S, I
+            // Dòng 2: GD, Interest, BH <--- Interest là ô thứ 5 (Trung tâm)
+            // Dòng 3: SS, PK, ĐT
+            
+            // Điều chỉnh logic chèn:
+            const interestCardIndex = 4; // Vị trí 5 (Trung tâm)
+            const allItemsFinal = groups.map(g => ({ type: 'group', data: g }));
+            allItemsFinal.splice(interestCardIndex, 0, { type: 'interest', id: 'interest-card' }); 
+            
+            // Bây giờ Gia dụng sẽ nằm ở vị trí thứ 4 (index 3) và Quan tâm nằm ở vị trí thứ 5 (index 4 - Trung tâm).
+            
             return (
                 <div className="p-4 md:p-6 font-sans text-slate-800 max-w-[1600px] mx-auto print:p-0 print:max-w-none">
                     
@@ -263,102 +531,41 @@
 
                     {/* PRODUCTS GRID */}
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mb-4 print-grid-fix print:mb-2 print:gap-2">
-                        {groups.map((group) => (
-                            <div key={group.id} className="bg-white rounded-lg shadow-md overflow-hidden border border-slate-100 flex flex-col break-inside-avoid print-no-shadow">
-                                {/* Card Header */}
-                                <div className="bg-slate-800 text-white p-2 px-3 flex justify-between items-center print:bg-slate-200 print:text-black print:py-1">
-                                    <input 
-                                        value={group.name}
-                                        onChange={(e) => handleGroupChange(group.id, 'name', e.target.value)}
-                                        className="bg-transparent text-white font-bold text-base focus:outline-none w-3/4 placeholder-slate-400 print:text-black print:placeholder-slate-600"
-                                        placeholder="Tên nhóm..."
+                        {/* Render items based on the new order */}
+                        {allItemsFinal.map((item, index) => {
+                            if (item.type === 'group') {
+                                return <GroupCard key={item.data.id} group={item.data} />;
+                            } else if (item.type === 'interest') {
+                                return (
+                                    <InterestGroupCard 
+                                        key={item.id} 
+                                        interestColumns={interestContent}
+                                        setInterestColumns={setInterestContent}
                                     />
-                                    <button 
-                                        onClick={() => removeGroup(group.id)}
-                                        className="text-slate-400 hover:text-red-400 transition-colors no-print"
-                                        title="Xóa"
-                                    >
-                                        <Icon name="Trash2" size={16} />
-                                    </button>
-                                </div>
+                                );
+                            }
+                            return null;
+                        })}
 
-                                {/* Targets Mini-Grid */}
-                                <div className="p-2 bg-slate-50 grid grid-cols-2 gap-2 text-center border-b border-slate-200 print:bg-white print:py-1">
-                                    <div className="flex flex-col border-r border-slate-200 pr-1">
-                                        <span className="text-[8px] text-slate-500 uppercase font-bold">Mục tiêu Tháng</span>
-                                        <input 
-                                            value={group.monthTarget}
-                                            onChange={(e) => handleGroupChange(group.id, 'monthTarget', e.target.value)}
-                                            className="w-full text-center text-xs font-semibold text-slate-700 bg-transparent focus:outline-none"
-                                            placeholder="..."
-                                        />
-                                    </div>
-                                    <div className="flex flex-col pl-1">
-                                        <span className="text-[8px] text-slate-500 uppercase font-bold">Lũy kế</span>
-                                        <input 
-                                            value={group.accumulated}
-                                            onChange={(e) => handleGroupChange(group.id, 'accumulated', e.target.value)}
-                                            className="w-full text-center text-xs font-semibold text-blue-600 bg-transparent focus:outline-none"
-                                            placeholder="..."
-                                        />
-                                    </div>
-                                    <div className="col-span-2 h-px bg-slate-200 my-0.5"></div>
-                                    <div className="flex flex-col border-r border-slate-200 pr-1">
-                                        <span className="text-[8px] text-slate-500 uppercase font-bold">Mục tiêu Tuần</span>
-                                        <input 
-                                            value={group.weekTarget}
-                                            onChange={(e) => handleGroupChange(group.id, 'weekTarget', e.target.value)}
-                                            className="w-full text-center text-xs font-semibold text-green-600 bg-transparent focus:outline-none"
-                                            placeholder="..."
-                                        />
-                                    </div>
-                                    <div className="flex flex-col pl-1">
-                                        <span className="text-[8px] text-slate-500 uppercase font-bold text-purple-600">Mục tiêu Ngày</span>
-                                        <input 
-                                            value={group.dailyTarget}
-                                            onChange={(e) => handleGroupChange(group.id, 'dailyTarget', e.target.value)}
-                                            className="w-full text-center text-xs font-semibold text-purple-600 bg-transparent focus:outline-none"
-                                            placeholder="..."
-                                        />
-                                    </div>
+                        {/* Add Button (Chỉ hiển thị khi tổng số ô < 9) */}
+                        {groups.length < 8 && (
+                            <button 
+                                onClick={addGroup}
+                                className="flex flex-col items-center justify-center min-h-[180px] bg-slate-50 border-2 border-dashed border-slate-300 rounded-lg hover:bg-white hover:border-blue-400 transition-all group cursor-pointer no-print"
+                            >
+                                <div className="bg-white p-2 rounded-full shadow-sm group-hover:shadow-md mb-2 transition-all">
+                                    <Icon name="Plus" className="text-slate-400 group-hover:text-blue-500" size={20} />
                                 </div>
+                                <span className="text-slate-400 font-medium group-hover:text-blue-500 text-xs">Thêm ngành hàng</span>
+                            </button>
+                        )}
 
-                                {/* Daily Inputs */}
-                                <div className="p-2 flex-grow print:py-1">
-                                    <div className="grid grid-cols-7 gap-1 mb-1">
-                                        {['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map(d => (
-                                            <div key={d} className="text-center text-[9px] font-bold text-slate-400">{d}</div>
-                                        ))}
-                                    </div>
-                                    <div className="grid grid-cols-7 gap-1 mb-2">
-                                        {Object.keys(group.days).map((day) => (
-                                            <input
-                                                key={day}
-                                                type="number"
-                                                value={group.days[day]}
-                                                onChange={(e) => handleDayChange(group.id, day, e.target.value)}
-                                                className="w-full text-center border border-slate-200 rounded py-0.5 text-xs focus:border-blue-500 focus:outline-none"
-                                            />
-                                        ))}
-                                    </div>
-                                    <div className="flex justify-between items-center pt-2 border-t border-slate-100 print:pt-1">
-                                        <span className="text-[10px] font-bold text-slate-600 uppercase">Tổng kết tuần:</span>
-                                        <span className="text-base font-bold text-blue-700">{calculateWeeklyTotal(group.days)}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
+                        {/* Ô trống nếu có đủ 9 ô (8 nhóm + 1 quan tâm) nhưng nhóm không đủ 9 */}
+                        {/* Hiện tại luôn có 9 ô (8 nhóm + 1 quan tâm) nên không cần ô trống */}
+                        {groups.length >= 8 && allItems.length === 9 && (
+                            <div className="hidden"></div>
+                        )}
 
-                        {/* Add Button */}
-                        <button 
-                            onClick={addGroup}
-                            className="flex flex-col items-center justify-center min-h-[180px] bg-slate-50 border-2 border-dashed border-slate-300 rounded-lg hover:bg-white hover:border-blue-400 transition-all group cursor-pointer no-print"
-                        >
-                            <div className="bg-white p-2 rounded-full shadow-sm group-hover:shadow-md mb-2 transition-all">
-                                <Icon name="Plus" className="text-slate-400 group-hover:text-blue-500" size={20} />
-                            </div>
-                            <span className="text-slate-400 font-medium group-hover:text-blue-500 text-xs">Thêm ngành hàng</span>
-                        </button>
                     </div>
 
                     {/* MANAGER COMMENTS */}
