@@ -15,6 +15,8 @@
             --text-dark: #333;
             --text-light: #fff;
             --danger-color: #dc3545;
+            --info-color: #17a2b8;
+            --purple-color: #6f42c1;
         }
 
         /* --- Cài đặt tổng thể --- */
@@ -81,7 +83,7 @@
             transform: translateY(-1px);
         }
 
-        /* --- CSS CHO PHẦN MÃ QR (Đã khôi phục) --- */
+        /* --- CSS CHO PHẦN MÃ QR --- */
         .qr-container {
             display: flex;
             flex-direction: column;
@@ -95,11 +97,11 @@
             transition: background-color 0.3s ease;
             position: relative;
             z-index: 101;
-            min-width: 180px; /* Đảm bảo đủ rộng cho dòng text */
+            min-width: 180px; 
         }
 
         .qr-img {
-            width: 60px; /* Khôi phục kích thước cũ */
+            width: 60px; 
             height: 60px;
             object-fit: contain;
             border-radius: 4px;
@@ -108,11 +110,11 @@
         }
 
         .qr-text {
-            font-size: 11px; /* Khôi phục font cũ */
+            font-size: 11px; 
             margin-top: 4px;
             font-weight: 500;
             color: #fff;
-            text-transform: none; /* Bỏ in hoa toàn bộ */
+            text-transform: none; 
             letter-spacing: 0.5px;
             text-align: center;
         }
@@ -160,7 +162,6 @@
             border-radius: 4px;
         }
         
-        /* Nút đóng overlay */
         .qr-overlay-close {
             position: absolute;
             top: 10px;
@@ -190,13 +191,15 @@
 
         .modal-content {
             background-color: #fefefe;
-            margin: 5% auto; 
+            margin: 2% auto; 
             padding: 25px;
             border: 1px solid #888;
             width: 90%; 
             max-width: 700px;
             border-radius: 12px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            max-height: 90vh;
+            overflow-y: auto;
         }
 
         .close-modal {
@@ -208,10 +211,32 @@
         }
         .close-modal:hover { color: #000; }
 
+        .backup-section-title {
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #444;
+            margin-bottom: 10px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .file-actions-container {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border: 1px dashed #ccc;
+        }
+
         .backup-textarea {
             width: 100%;
-            height: 200px;
-            margin: 15px 0;
+            height: 120px;
+            margin: 10px 0;
             padding: 10px;
             font-family: monospace;
             font-size: 12px;
@@ -236,20 +261,23 @@
             display: flex;
             align-items: center;
             gap: 5px;
+            transition: all 0.2s;
         }
 
         .btn-copy { background-color: #6c757d; color: white; }
         .btn-restore { background-color: var(--dmx-green); color: white; }
         .btn-clear { background-color: var(--danger-color); color: white; margin-right: auto; }
+        .btn-download { background-color: var(--dmx-blue); color: white; width: 50%; justify-content: center;}
+        .btn-upload { background-color: var(--dmx-orange); color: white; width: 50%; justify-content: center;}
         
-        .action-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+        .action-btn:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
 
         @keyframes fadeInScale {
             from { opacity: 0; transform: scale(0.8); }
             to { opacity: 1; transform: scale(1); }
         }
 
-        /* --- Thanh Tabs điều hướng (ĐÃ CẬP NHẬT GIAO DIỆN MỚI) --- */
+        /* --- Thanh Tabs điều hướng --- */
         .tab-bar {
             background-color: var(--bg-color); 
             padding: 15px 20px; 
@@ -259,7 +287,7 @@
             gap: 15px; 
             flex-wrap: wrap;
             z-index: 99;
-            position: sticky; /* Giữ thanh tab cố định khi cuộn */
+            position: sticky; 
             top: 0;
         }
 
@@ -271,20 +299,18 @@
             font-size: 0.95em;
             font-weight: 600;
             color: #555;
-            border-radius: 25px; /* Hình viên thuốc hiện đại */
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* Transition mượt mà hơn */
+            border-radius: 25px; 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
             align-items: center;
             gap: 8px;
-            /* Hiệu ứng Nổi khối 3D (Neumorphism nhẹ) */
             box-shadow: 
-                3px 3px 6px rgba(189, 194, 201, 0.7), /* Shadow tối/dưới */
-                -3px -3px 6px rgba(255, 255, 255, 1); /* Shadow sáng/trên */
+                3px 3px 6px rgba(189, 194, 201, 0.7), 
+                -3px -3px 6px rgba(255, 255, 255, 1); 
         }
 
         .tab-button:hover { 
             color: var(--dmx-blue); 
-            /* Hiệu ứng Nổi khối khi hover: Nhấc nhẹ lên */
             transform: translateY(-2px); 
             box-shadow: 
                 5px 5px 10px rgba(189, 194, 201, 0.8), 
@@ -293,7 +319,6 @@
 
         .tab-button.active { 
             color: var(--text-light); 
-            /* Hiệu ứng Bị Nhấn (Pressed) với Gradient và Shadow nhấn vào trong */
             background: linear-gradient(45deg, var(--dmx-blue), #0066cc);
             transform: translateY(0); 
             box-shadow: 
@@ -348,9 +373,10 @@
             .header-left { justify-content: space-between; }
             .header-actions { flex-direction: column; align-items: stretch; }
             .backup-btn { margin-right: 0; justify-content: center; }
-            /* Cập nhật responsive cho thanh tab mới */
             .tab-bar { padding: 10px; overflow-x: auto; flex-wrap: nowrap; }
             .tab-button { padding: 8px 15px; white-space: nowrap; font-size: 0.9em; }
+            .file-actions-container { flex-direction: column; }
+            .btn-download, .btn-upload { width: 100%; }
         }
     </style>
 </head>
@@ -418,22 +444,37 @@
         </div>
     </div>
 
+    <!-- UPDATE: Backup Modal mới -->
     <div id="backupModal" class="modal">
         <div class="modal-content">
             <span class="close-modal" onclick="closeBackupModal()">&times;</span>
             <h2 style="margin-top:0; color: var(--dmx-blue);"><i class="fas fa-database"></i> Quản lý Dữ liệu Hệ thống</h2>
-            <p style="font-size: 0.9em; color: #666;">
-                Dưới đây là mã dữ liệu bao gồm <strong>TOÀN BỘ</strong> thông tin từ tất cả các trang (Realtime, Lũy kế, Nhân viên...).<br>
-                - Để <strong>Backup</strong>: Sao chép mã này và lưu lại.<br>
-                - Để <strong>Restore</strong>: Dán mã vào đây và ấn nút "Khôi phục".
-            </p>
             
-            <textarea id="globalDataTextarea" class="backup-textarea" placeholder="Chuỗi dữ liệu backup sẽ hiện ở đây..."></textarea>
+            <p style="font-size: 0.9em; color: #666; margin-bottom: 20px;">
+                Quản lý dữ liệu toàn bộ trang Dashboard (bao gồm Realtime, Nhân viên, v.v.).
+            </p>
+
+            <!-- CÁCH 1: FILE (NEW) -->
+            <div class="backup-section-title"><i class="fas fa-file-alt"></i> Cách 1: Dùng File (Nhanh & Tiện)</div>
+            <div class="file-actions-container">
+                <button class="action-btn btn-download" onclick="downloadBackupFile()">
+                    <i class="fas fa-download"></i> Tải File Backup (.json)
+                </button>
+                
+                <input type="file" id="backupFileInput" accept=".json, .txt" style="display: none;" onchange="handleFileSelect(this)">
+                <button class="action-btn btn-upload" onclick="document.getElementById('backupFileInput').click()">
+                    <i class="fas fa-upload"></i> Khôi phục từ File
+                </button>
+            </div>
+
+            <!-- CÁCH 2: TEXT -->
+            <div class="backup-section-title"><i class="fas fa-code"></i> Cách 2: Thủ công (Copy/Paste mã)</div>
+            <textarea id="globalDataTextarea" class="backup-textarea" placeholder="Chuỗi dữ liệu JSON..."></textarea>
             
             <div class="modal-actions">
                 <button class="action-btn btn-clear" onclick="clearAllData()">🗑️ Xóa sạch dữ liệu</button>
-                <button class="action-btn btn-copy" onclick="copyGlobalData()">📋 Sao chép</button>
-                <button class="action-btn btn-restore" onclick="restoreGlobalData()">📥 Khôi phục & Tải lại</button>
+                <button class="action-btn btn-copy" onclick="copyGlobalData()">📋 Copy mã</button>
+                <button class="action-btn btn-restore" onclick="restoreGlobalData()">📥 Khôi phục từ mã</button>
             </div>
         </div>
     </div>
@@ -456,39 +497,40 @@
             evt.currentTarget.classList.add("active");
         }
 
-        // --- QR Logic (Đã khôi phục: Hover/Di chuột) ---
+        // --- QR Logic ---
         const qrContainer = document.getElementById('qrContainer');
         const qrOverlay = document.getElementById('qrOverlay');
 
-        // Sử dụng mouseenter (hover) thay vì click
         qrContainer.addEventListener('mouseenter', () => {
             qrOverlay.classList.add('active');
-            // document.body.style.overflow = 'hidden'; // Tùy chọn: chặn cuộn khi hiện overlay
         });
 
         function hideQrOverlay() {
             qrOverlay.classList.remove('active');
-            document.body.style.overflow = '';
         }
 
-        // Thêm nút đóng và click ra ngoài để đóng
         qrOverlay.addEventListener('click', (event) => {
             if (event.target === qrOverlay) hideQrOverlay();
         });
 
         // --- BACKUP / RESTORE GLOBAL LOGIC ---
-        function openBackupModal() {
-            const modal = document.getElementById('backupModal');
-            const textarea = document.getElementById('globalDataTextarea');
-            
-            // Lấy toàn bộ dữ liệu từ localStorage
+        
+        // 1. Helper: Lấy toàn bộ dữ liệu
+        function getAllLocalStorage() {
             const allData = {};
             for (let i = 0; i < localStorage.length; i++) {
                 const key = localStorage.key(i);
                 allData[key] = localStorage.getItem(key);
             }
+            return allData;
+        }
+
+        // 2. Mở Modal & hiển thị text
+        function openBackupModal() {
+            const modal = document.getElementById('backupModal');
+            const textarea = document.getElementById('globalDataTextarea');
             
-            // Chuyển thành chuỗi JSON đẹp
+            const allData = getAllLocalStorage();
             textarea.value = JSON.stringify(allData, null, 2);
             modal.style.display = "block";
         }
@@ -497,20 +539,48 @@
             document.getElementById('backupModal').style.display = "none";
         }
 
-        function copyGlobalData() {
-            const textarea = document.getElementById('globalDataTextarea');
-            textarea.select();
-            textarea.setSelectionRange(0, 99999);
-            document.execCommand('copy');
-            showToast("Đã sao chép toàn bộ dữ liệu vào bộ nhớ đệm!");
+        // 3. Tải File Backup (NEW)
+        function downloadBackupFile() {
+            const allData = getAllLocalStorage();
+            const dataStr = JSON.stringify(allData, null, 2);
+            const blob = new Blob([dataStr], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            
+            // Tạo tên file có ngày tháng
+            const date = new Date();
+            const dateStr = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+            const fileName = `Backup_Dashboard_DMX_${dateStr}.json`;
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showToast("Đang tải file backup xuống...");
         }
 
-        function restoreGlobalData() {
-            const textarea = document.getElementById('globalDataTextarea');
-            const jsonStr = textarea.value.trim();
-            
-            if (!jsonStr) {
-                showToast("Vui lòng dán mã dữ liệu vào ô trống.");
+        // 4. Xử lý khi chọn File để khôi phục (NEW)
+        function handleFileSelect(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const content = e.target.result;
+                processRestore(content);
+                // Reset input để có thể chọn lại file đó lần nữa nếu muốn
+                input.value = '';
+            };
+            reader.readAsText(file);
+        }
+
+        // 5. Hàm xử lý logic khôi phục chung (Dùng cho cả File và Textarea)
+        function processRestore(jsonStr) {
+            if (!jsonStr || jsonStr.trim() === "") {
+                showToast("Dữ liệu rỗng!");
                 return;
             }
 
@@ -521,7 +591,7 @@
                     throw new Error("Dữ liệu không hợp lệ.");
                 }
 
-                if (confirm("Cảnh báo: Hành động này sẽ GHI ĐÈ toàn bộ dữ liệu hiện tại của tất cả các trang bằng dữ liệu mới. Bạn có chắc chắn không?")) {
+                if (confirm("CẢNH BÁO QUAN TRỌNG:\n\nHành động này sẽ XÓA TOÀN BỘ dữ liệu hiện tại và thay thế bằng dữ liệu từ bản backup.\n\nBạn có chắc chắn muốn tiếp tục không?")) {
                     // Xóa dữ liệu cũ
                     localStorage.clear();
                     
@@ -530,19 +600,33 @@
                         localStorage.setItem(key, data[key]);
                     }
 
-                    showToast("Khôi phục thành công! Trang sẽ tải lại sau 2 giây...");
+                    showToast("Khôi phục thành công! Đang tải lại trang...");
                     setTimeout(() => {
                         location.reload(); 
-                    }, 2000);
+                    }, 1500);
                 }
             } catch (e) {
                 console.error(e);
-                showToast("Lỗi: Mã dữ liệu không đúng định dạng JSON.");
+                showToast("Lỗi: File hoặc Mã không đúng định dạng JSON.");
             }
         }
 
+        // 6. Các hàm cũ (Copy, Restore từ Textarea)
+        function copyGlobalData() {
+            const textarea = document.getElementById('globalDataTextarea');
+            textarea.select();
+            textarea.setSelectionRange(0, 99999);
+            document.execCommand('copy');
+            showToast("Đã sao chép mã dữ liệu!");
+        }
+
+        function restoreGlobalData() {
+            const textarea = document.getElementById('globalDataTextarea');
+            processRestore(textarea.value);
+        }
+
         function clearAllData() {
-            if (confirm("CẢNH BÁO: Bạn có chắc chắn muốn XÓA SẠCH toàn bộ dữ liệu của Dashboard không? Hành động này không thể hoàn tác!")) {
+            if (confirm("CẢNH BÁO CỰC MẠNH: Bạn có chắc chắn muốn XÓA SẠCH toàn bộ dữ liệu không? Mất hết đó nha!")) {
                 localStorage.clear();
                 document.getElementById('globalDataTextarea').value = "{}";
                 showToast("Đã xóa sạch dữ liệu hệ thống.");
