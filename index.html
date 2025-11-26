@@ -99,6 +99,10 @@
             z-index: 101;
             min-width: 180px; 
         }
+        
+        .qr-container:hover {
+            background-color: rgba(255, 255, 255, 0.25);
+        }
 
         .qr-img {
             width: 60px; 
@@ -501,7 +505,8 @@
         const qrContainer = document.getElementById('qrContainer');
         const qrOverlay = document.getElementById('qrOverlay');
 
-        qrContainer.addEventListener('mouseenter', () => {
+        // SỬA: Bỏ 'mouseenter' thay bằng 'click'
+        qrContainer.addEventListener('click', () => {
             qrOverlay.classList.add('active');
         });
 
