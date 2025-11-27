@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Lũy kế - v219.2 (Fix DT Cùng Kỳ & Summary)</title>
+    <title>Dashboard Lũy kế - v219.3 (Fix Lỗi Mục Tiêu Ngành Hàng)</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -1164,7 +1164,7 @@
         wrapper.innerHTML = `<h2><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M13,9V3.5L18.5,9M6,2C4.89,2 4,2.89 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2H6Z" /></svg>Bảng Chi Tiết Thi Đua Ngành Hàng</h2><div class="progress-bar-container" style="padding: 0 0 25px 0;"><div class="progress-labels"><span>Tiến độ Về Đích (Dự kiến)</span><span>${filteredOnTrack.length} / ${filteredAll.length} Nhóm</span></div><div class="progress-track"><div class="progress-fill" style="width: ${progressPercentContest}%; background-color: ${getColor(progressPercentContest, 50, 80)};"></div></div><div class="progress-text-wrapper"><span class="progress-text">${formatNumber(progressPercentContest, 1)}%</span></div></div><div class="contest-split-layout">${createContestDetailTableCard(filteredOnTrack, 'Dự Kiến Hoàn Thành', 'top-performers', true, 1)}${createContestDetailTableCard(filteredBehind, 'Cần Cải Thiện', 'needs-improvement', false, filteredOnTrack.length + 1)}</div>`;
     }
     
-    // START: Cập nhật hàm renderLuyKeSummary từ 13.html
+    // START: Cập nhật hàm renderLuyKeSummary - FIXED ERROR
     function renderLuyKeSummary(kpis, contest, reportDate) {
         const container = document.getElementById('summary-report-wrapper-luyke');
         container.style.display = 'block';
@@ -1176,7 +1176,9 @@
         const createSubListWithActual = (items) => {
             const filteredItems = items.filter(item => getContestCategoriesToDisplay().includes(item.name));
             if (!filteredItems || filteredItems.length === 0) return { list: '', count: 0 };
-            return { list: filteredItems.map(item => `  - ${item.name} (${formatNumber(item.percentActual, 1)}%)${item.percentActual < 100 && item.dailyTarget > 0 ? `: cần ${formatNumber(Math.max(item.dailyTarget, mucTieuNgayKyVong), 0)}/ngày` : ''}`).join('\n'), count: filteredItems.length };
+            // FIX: Removed Math.max(item.dailyTarget, mucTieuNgayKyVong) and replaced with item.dailyTarget
+            // This ensures each category shows its OWN daily target, not the store's daily target.
+            return { list: filteredItems.map(item => `  - ${item.name} (${formatNumber(item.percentActual, 1)}%)${item.percentActual < 100 && item.dailyTarget > 0 ? `: cần ${formatNumber(item.dailyTarget, 0)}/ngày` : ''}`).join('\n'), count: filteredItems.length };
         };
 
         const filteredAllContest = contest.all.filter(item => getContestCategoriesToDisplay().includes(item.name));
@@ -1194,7 +1196,7 @@
         // Render Infographic
         renderInfographic(kpis, filteredAllContest, reportDate, mucTieuNgayKyVong);
     }
-    // END: Cập nhật hàm renderLuyKeSummary từ 13.html
+    // END: Cập nhật hàm renderLuyKeSummary - FIXED ERROR
     
     function renderInfographic(kpis, contestItems, reportDate, mucTieuNgayKyVong) {
         document.getElementById('infographic-report-wrapper').style.display = 'block';
