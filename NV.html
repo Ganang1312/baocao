@@ -2070,6 +2070,7 @@
             
             // 4. Tính toán Target và chỉ số cho từng nhân viên
             const targetMap = new Map();
+            const percentMap = new Map(); // Store percentage for each employee ID
             const mode = document.querySelector('input[name="targetMode"]:checked').value;
             const storeTarget = inputs.storeTarget;
             const activeEmployees = detectedEmployees.filter(e => e.checked);
@@ -2079,10 +2080,19 @@
             detectedEmployees.forEach(emp => {
                 if (emp.checked) {
                     let val = 0;
-                    if (mode === 'even') { val = evenValue; } else { val = storeTarget * (emp.percent / 100); }
+                    let pct = 0;
+                    if (mode === 'even') { 
+                        val = evenValue;
+                        pct = activeCount > 0 ? (100 / activeCount) : 0;
+                    } else { 
+                        val = storeTarget * (emp.percent / 100); 
+                        pct = emp.percent;
+                    }
                     targetMap.set(emp.id, val);
+                    percentMap.set(emp.id, pct);
                 } else {
                     targetMap.set(emp.id, 0);
+                    percentMap.set(emp.id, 0);
                 }
             });
 
@@ -2090,14 +2100,13 @@
             employeeMap.forEach(employee => {
                 employee.revenueTarget = targetMap.get(employee.id) || 0;
                 employee.contestTargets = {};
+                const empPercent = percentMap.get(employee.id) || 0;
+
                 finalContestHeaders.forEach(h => {
                      if (contestTargetsStore[h]) {
-                        if (targetMap.get(employee.id) > 0) {
-                             // Chia đều target nhóm theo số nhân viên được chọn
-                             employee.contestTargets[h] = Math.ceil(contestTargetsStore[h] / activeCount); 
-                        } else {
-                             employee.contestTargets[h] = 0;
-                        }
+                        // Áp dụng % phân bổ cho cả target ngành hàng
+                        // Thay vì chia đều, nhân target tổng với % phân bổ của nhân viên
+                        employee.contestTargets[h] = Math.ceil(contestTargetsStore[h] * (empPercent / 100));
                     }
                 });
             });
