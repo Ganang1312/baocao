@@ -415,6 +415,10 @@
         .text-success { color: var(--success-color) !important; font-weight: 700; }
         .text-warning { color: var(--warning-color) !important; font-weight: 700; }
         .text-danger { color: var(--danger-color) !important; font-weight: 700; }
+        
+        /* NEW: Class cho Icon Cup/Checkmark (để đồng nhất) */
+        .icon-cell { font-size: 1.2em; font-weight: 700; color: var(--success-color); }
+        .success-text { color: var(--success-color); } /* Dùng cho text đã hoàn thành */
 
 
         /* Comparison Table inside KPI card */
@@ -1063,16 +1067,24 @@
         const currentYear = today.getFullYear();
         let passedDays, totalDays;
 
-        if (today.getDate() === 1) {
-            const prevMonthDate = new Date(currentYear, today.getMonth(), 0);
-            totalDays = prevMonthDate.getDate();
-            passedDays = prevMonthDate.getDate();
-        } else {
-            totalDays = new Date(currentYear, today.getMonth() + 1, 0).getDate();
-            passedDays = today.getDate() - 1;
-        }
+        // Tính toán số ngày đã qua (Passed Days) và tổng số ngày trong khung thời gian (Total Days)
+        // Số ngày còn lại = Total Days - Passed Days (hoặc Today.getDate())
         
-        const defaultTimeframe = { passedDays: Math.max(1, passedDays), totalDays };
+        // Lấy tổng số ngày của tháng hiện tại
+        totalDays = new Date(currentYear, today.getMonth() + 1, 0).getDate();
+        // Số ngày đã trôi qua (Tính đến HÔM QUA)
+        passedDays = today.getDate() - 1; 
+        
+        // Số ngày còn lại (bao gồm cả hôm nay) = Total Days - Passed Days = Total Days - (Today - 1)
+        const remainingDays = totalDays - passedDays;
+        
+        // Mặc định cho trường hợp không xác định khung T(x)-T(y)
+        const defaultTimeframe = { 
+            passedDays: Math.max(1, passedDays), 
+            totalDays,
+            remainingDays: Math.max(1, remainingDays) 
+        };
+        
         const match = header.match(/\(\s*T(\d+)\s*-\s*T(\d+)\s*\)/);
 
         if (match) {
@@ -1096,7 +1108,15 @@
                     passedDaysInContest = yesterday > endDate ? totalDaysInContest : Math.floor((yesterday - startDate) / (1000 * 60 * 60 * 24)) + 1;
                 }
                 
-                return { passedDays: Math.max(1, passedDaysInContest), totalDays: totalDaysInContest };
+                const currentDayInContest = Math.min(Math.floor((today - startDate) / (1000 * 60 * 60 * 24)) + 1, totalDaysInContest);
+                const remainingDaysInContest = totalDaysInContest - currentDayInContest + 1;
+
+
+                return { 
+                    passedDays: Math.max(1, passedDaysInContest), 
+                    totalDays: totalDaysInContest,
+                    remainingDays: Math.max(1, remainingDaysInContest) // Số ngày còn lại (kể cả hôm nay)
+                };
             } catch (e) { return defaultTimeframe; }
         }
         return defaultTimeframe;
@@ -2460,7 +2480,10 @@
         const revenueRemaining = revenueTarget - revenueActual;
         const totalDisplayedContests = sortedContestHeadersGlobal.length; 
         const timeframe = getContestTimeframe('');
-        const revenueTodayTarget = (revenueRemaining > 0) ? revenueRemaining / (timeframe.totalDays - timeframe.passedDays + 1) : 0;
+        
+        // SỬA LỖI: Cập nhật tính Mục tiêu Ngày cho DT Tổng
+        const remainingDays = timeframe.remainingDays; // Số ngày còn lại (kể cả hôm nay)
+        const revenueTodayTarget = (revenueRemaining > 0 && remainingDays > 0) ? revenueRemaining / remainingDays : 0;
         
         const revenueCompletionCapped = Math.min(100, employee.revenueCompletion);
         const contestCompletionCapped = Math.min(100, employee.overallProjectedContestCompletion);
@@ -2471,7 +2494,10 @@
         else if (employee.rank === 3) rankIcon = '🥉 ';
         else if (total > 3 && employee.rank >= total - 2) rankIcon = '🔴 ';
         
-        const remainingRevenueCell = revenueRemaining <= 0 ? `<span class="value">✅</span>` : `<span class="value">${formatNumberFull(revenueRemaining, 0)}</span>`;
+        // SỬA LỖI: Dùng Icon Cup cho DT Tổng nếu Target đã hoàn thành
+        const isRevenueTargetCompleted = revenueActual >= revenueTarget;
+        const remainingRevenueCell = isRevenueTargetCompleted ? `<span class="value success-text">🏆</span>` : `<span class="value">${formatNumberFull(revenueRemaining, 0)}</span>`;
+
 
         const avatarSvg = `<svg width="60" height="60" xmlns="http://www.w3.org/2000/svg"><circle cx="30" cy="30" r="27" fill="#ccc" stroke="white" stroke-width="3"/><text x="50%" y="50%" dy=".1em" dominant-baseline="central" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="${getInitials(employee.name).length > 1 ? '24' : '28'}" fill="#fff" font-weight="bold">${getInitials(employee.name)}</text></svg>`;
 
@@ -2484,11 +2510,20 @@
             .sort((a,b) => b[1].projectedPercent - a[1].projectedPercent)
             .map(([category, data], index) => {
                 const contestTimeframe = getContestTimeframe(category);
-                const remainingDays = contestTimeframe.totalDays - contestTimeframe.passedDays + 1;
-                const todayTarget = (data.target - data.actual > 0 && remainingDays > 0) ? (data.target - data.actual) / remainingDays : 0;
-                const targetTodayCell = data.projectedPercent >= 100 ? `<td class="icon-cell">🏆</td>` : `<td>${formatNumberFull(todayTarget, 2)}</td>`;
+                
+                // CẬP NHẬT LOGIC: Tính Mục tiêu Ngày và Icon Cup chính xác
                 const remaining = data.target - data.actual;
-                const remainingCell = remaining <= 0 ? `<td class="icon-cell">✅</td>` : `<td>${formatNumberFull(remaining, 2)}</td>`;
+                const remainingDaysContest = contestTimeframe.remainingDays; // Số ngày còn lại (kể cả hôm nay)
+                
+                // Mục tiêu ngày = Còn lại / Số ngày còn lại (chỉ tính nếu còn lại > 0 và còn ngày)
+                const todayTarget = (remaining > 0 && remainingDaysContest > 0) ? remaining / remainingDaysContest : 0;
+                
+                // Xác định trạng thái hoàn thành target
+                const isTargetCompleted = data.actual >= data.target;
+
+                // Hiển thị Icon Cup nếu Target đã hoàn thành
+                const targetTodayCell = isTargetCompleted ? `<td class="icon-cell">🏆</td>` : `<td>${formatNumberFull(todayTarget, 2)}</td>`;
+                const remainingCell = isTargetCompleted ? `<td class="icon-cell">🏆</td>` : `<td>${formatNumberFull(remaining, 2)}</td>`;
                 
                 // Lấy so sánh lũy kế (nếu có)
                 let changeActualHtml = '';
@@ -2562,7 +2597,7 @@
                             <div><div class="label">📈 Lũy kế DT</div><span class="value">${formatNumberFull(revenueActual, 0)}</span></div>
                             <div><div class="label">📉 DT Còn lại</div>${remainingRevenueCell}</div>
                             <div><div class="label">🔮 Dự kiến HT</div><span class="value">${employee.projectedRevenueCompletion.toFixed(0)}%</span></div>
-                            <div><div class="label">📅 M.tiêu DT</div><span class="value">${formatNumberFull(revenueTodayTarget, 0)}</span></div>
+                            <div><div class="label">📅 M.tiêu DT</div><span class="value">${isRevenueTargetCompleted ? '🏆' : formatNumberFull(revenueTodayTarget, 0)}</span></div>
                         </div>
                          <div class="contest-table-container" style="margin-top: 15px;">
                             <h3 style="font-size:1.1em;">Thi đua ngành hàng (Dự kiến HT: ${employee.projectedCompletedContests}/${totalDisplayedContests})</h3>
@@ -2721,11 +2756,18 @@
             const leaderAction = getLeadershipStyleInfo(task.analysis.sLevel);
             const data = task.rawData;
             const contestTimeframe = getContestTimeframe(task.name);
-            const remainingDays = contestTimeframe.totalDays - contestTimeframe.passedDays + 1;
-            const todayTarget = (data.target - data.actual > 0 && remainingDays > 0) ? (data.target - data.actual) / remainingDays : 0;
-            const targetTodayCell = data.projectedPercent >= 100 ? `<span class="value green">🏆</span>` : `<span class="value">${formatNumberFull(todayTarget, 2)}</span>`;
+            
             const remaining = data.target - data.actual;
-            const remainingCell = remaining <= 0 ? `<span class="value green">✅</span>` : `<span class="value">${formatNumberFull(remaining, 2)}</span>`;
+            const remainingDays = contestTimeframe.remainingDays; 
+            const isTargetCompleted = data.actual >= data.target;
+
+            // Mục tiêu ngày: Còn lại / Số ngày còn lại (chỉ tính nếu còn lại > 0 và còn ngày)
+            const todayTarget = (remaining > 0 && remainingDays > 0) ? remaining / remainingDays : 0;
+            
+            // Icon Cup: Dùng Cup nếu Target đã hoàn thành
+            const targetTodayCell = isTargetCompleted ? `<span class="value green">🏆</span>` : `<span class="value">${formatNumberFull(todayTarget, 2)}</span>`;
+            const remainingCell = isTargetCompleted ? `<span class="value green">🏆</span>` : `<span class="value">${formatNumberFull(remaining, 2)}</span>`;
+            
             const projectedPercentClass = data.projectedPercent >= 100 ? 'green' : (data.projectedPercent >= 80 ? 'green' : (data.projectedPercent >= 50 ? 'red' : 'red'));
             
             return `
@@ -2756,9 +2798,16 @@
         const revenueTarget = employeeData.revenueTarget || 0;
         const revenueRemaining = revenueTarget - revenueActual;
         const timeframe = getContestTimeframe('');
-        const revenueTodayTarget = (revenueRemaining > 0) ? revenueRemaining / (timeframe.totalDays - timeframe.passedDays + 1) : 0;
-        const revenueTodayCell = employeeData.projectedRevenueCompletion >= 100 ? `<span class="value green">🏆</span>` : `<span class="value">${formatNumberFull(revenueTodayTarget, 0)}</span>`;
-        const revenueRemainingCell = revenueRemaining <= 0 ? `<span class="value green">✅</span>` : `<span class="value">${formatNumberFull(revenueRemaining, 0)}</span>`;
+        
+        const remainingDaysRevenue = timeframe.remainingDays;
+        const isRevenueTargetCompleted = revenueActual >= revenueTarget;
+        
+        // Mục tiêu ngày: Còn lại / Số ngày còn lại (chỉ tính nếu còn lại > 0 và còn ngày)
+        const revenueTodayTarget = (revenueRemaining > 0 && remainingDaysRevenue > 0) ? revenueRemaining / remainingDaysRevenue : 0;
+        
+        const revenueTodayCell = isRevenueTargetCompleted ? `<span class="value green">🏆</span>` : `<span class="value">${formatNumberFull(revenueTodayTarget, 0)}</span>`;
+        const revenueRemainingCell = isRevenueTargetCompleted ? `<span class="value green">✅</span>` : `<span class="value">${formatNumberFull(revenueRemaining, 0)}</span>`;
+        
         const projectedPercentClass = employeeData.projectedRevenueCompletion >= 100 ? 'green' : (employeeData.projectedRevenueCompletion >= 80 ? 'green' : (employeeData.projectedRevenueCompletion >= 50 ? 'red' : 'red'));
 
         let revenueTaskHtml = `
