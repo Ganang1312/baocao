@@ -1383,140 +1383,136 @@
             }
         }
     }
-    
-    // --- NEW LOGIC: QUẢN LÝ NHÂN VIÊN VÀ TARGET ---
+// --- FINAL FIX: SỬA LỖI "contest3MonthContribution.get is not a function" ---
     function extractEmployeesFromInputs() {
-        const allInputIds = ['dataInput6', 'dataInput7', 'dataInput6_T1', 'dataInput6_T2', 'dataInput6_T3', 'dataInput7_T1', 'dataInput7_T2', 'dataInput7_T3'];
-        
-        let employeeSet = new Set();
-        let currentContestHeaders = []; // Local variable for immediate rendering
-        
-        allInputIds.forEach(id => {
-            const data = document.getElementById(id).value;
-            if (data.trim()) {
-                const lines = data.split('\n');
-                // Tự động tìm kiếm header row (có thể là dòng đầu tiên hoặc dòng sau 'Phòng ban')
-                let headerLine = lines[0];
-                let contentLines = lines.slice(1);
-
-                if (lines.length > 1 && lines[0].includes('Phòng ban')) {
-                     const subHeaderIndex = lines.findIndex(line => line.trim().startsWith('SLLK'));
-                     if (subHeaderIndex !== -1) {
-                         headerLine = lines[subHeaderIndex - 1]; // Headers là dòng trước SLLK
-                         contentLines = lines.slice(subHeaderIndex + 1);
-                     }
-                } else if (lines.length > 1 && lines[0].includes('Nhân viên')) {
-                    headerLine = lines[0];
-                    contentLines = lines.slice(1);
-                }
-
-
-                const headers = headerLine.split('\t').map(h => h.trim());
-                const nameIndex = headers.findIndex(h => h.includes('Nhân viên') || h.includes('Phòng ban'));
+        try {
+            console.log("Đang bắt đầu trích xuất dữ liệu...");
+            const allInputIds = ['dataInput6', 'dataInput7', 'dataInput6_T1', 'dataInput6_T2', 'dataInput6_T3', 'dataInput7_T1', 'dataInput7_T2', 'dataInput7_T3'];
+            let employeeSet = new Set();
+            
+            // 1. QUÉT NHÂN VIÊN
+            allInputIds.forEach(id => {
+                const el = document.getElementById(id);
+                if (!el || !el.value.trim()) return;
                 
-                if (nameIndex !== -1) {
-                     contentLines.forEach(row => {
-                        const cells = row.split('\t');
-                        const nameId = (cells[nameIndex] || cells[0] || '').trim();
-                        // Lọc cơ bản: phải có dấu gạch ngang (ID - Tên) và không phải dòng tổng
-                        if (nameId && nameId.includes(' - ') && !nameId.startsWith('TỔNG') && !nameId.startsWith('BP')) {
-                             // Tách phần tên để lọc các dòng tổng kết ngành hàng/nhóm thi đua (như Samsung, Đồng hồ)
-                             const namePart = nameId.split(' - ')[0].trim().toUpperCase();
-                             // Danh sách từ khóa loại trừ (groups/brands)
-                             const excludedKeywords = ['PHỤ KIỆN', 'TỔNG CỘNG', 'SAMSUNG', 'ĐỒNG HỒ', 'APPLE', 'CE', 'PC', 'TGDĐ'];
-                             
-                             if (!excludedKeywords.some(keyword => namePart.includes(keyword))) {
-                                employeeSet.add(nameId);
-                            }
-                        }
-                    });
-                }
-            }
-        });
-        
-        // NEW FIX: 1. Extract Contest Headers (MANDATORY for Target Allocation UI)
-        const data7 = document.getElementById('dataInput7').value;
-        if (data7.trim()) {
-            const lines7 = data7.split('\n').filter(line => line.trim());
-            const subHeaderIndex7 = lines7.findIndex(line => line.trim().startsWith('SLLK'));
-            if (subHeaderIndex7 !== -1) {
-                let allHeaders = lines7.slice(1, subHeaderIndex7).map(h => h.trim()).filter(Boolean);
-                
-                const invalidHeaderKeywords = ['DTLK', 'SLLK', 'Tổng', 'BP All In One', 'Nguyễn', 'Bùi', 'Dương', 'Đỗ', 'Trần', 'Lê', 'Phạm', 'Hoàng', 'Phan', 'Vũ', 'Đặng', 'Thị'];
-                allContestHeadersGlobal = allHeaders.filter(header => {
-                    return !invalidHeaderKeywords.some(keyword => header.includes(keyword));
+                const lines = el.value.split('\n');
+                lines.forEach(line => {
+                    if (line.includes('-') || line.includes('–')) {
+                         const parts = line.split(/[\t]/); 
+                         parts.forEach(cell => {
+                             const cleanCell = cell.trim();
+                             if (cleanCell.length > 5 && /[a-zA-Z]/.test(cleanCell) && /\d+$/.test(cleanCell)) {
+                                 if (!cleanCell.startsWith('TỔNG') && 
+                                     !cleanCell.startsWith('BP') && 
+                                     !cleanCell.includes('Nhân viên') &&
+                                     !cleanCell.includes('Siêu thị')) {
+                                     employeeSet.add(cleanCell);
+                                 }
+                             }
+                         });
+                    }
                 });
+            });
+
+            // 2. QUÉT NGÀNH HÀNG (Bảng 7)
+            const data7 = document.getElementById('dataInput7').value;
+            let foundHeaders = [];
+            
+            if (data7.trim()) {
+                const lines7 = data7.split('\n').filter(l => l.trim());
+                const stopIndex = lines7.findIndex(line => line.includes('DTQĐ') || (line.includes('SLLK') && line.includes('DTLK')));
+                
+                if (stopIndex > 0) {
+                    const potentialHeaders = lines7.slice(0, stopIndex);
+                    potentialHeaders.forEach(row => {
+                        const cols = row.split('\t');
+                        cols.forEach(c => {
+                            const val = c.trim();
+                            if (val && isNaN(val) && val !== 'Phòng ban' && !val.startsWith('BP ')) {
+                                foundHeaders.push(val);
+                            }
+                        });
+                    });
+                    if (foundHeaders.length > 0) {
+                        allContestHeadersGlobal = [...new Set(foundHeaders)];
+                    }
+                }
             }
-        }
-        currentContestHeaders = [...allContestHeadersGlobal]; 
 
-        if (employeeSet.size > 0) {
-            const newEmployeeList = Array.from(employeeSet).sort();
-            
-            // Xử lý Target (Chỉ cần cập nhật danh sách nhân viên để phục vụ tính toán)
-            detectedEmployees = newEmployeeList.map(id => ({ 
-                id: id, 
-                name: id.split(' - ')[0].trim(), 
-                checked: true, 
-                percent: 0 
-            }));
-            
-            // NEW FIX: 2. Calculate initial targets and update finalEmployeeTargets
-            const initialTargets = calculateInitialTargets(currentContestHeaders); 
+            if (selectedContestHeaders.length === 0 && allContestHeadersGlobal.length > 0) {
+                 selectedContestHeaders = [...allContestHeadersGlobal];
+                 localStorage.setItem('selectedContestHeaders', JSON.stringify(selectedContestHeaders));
+            }
 
-            if (finalEmployeeTargets.size === 0 || initialTargets.size > finalEmployeeTargets.size) {
-                // Nếu là lần đầu hoặc có nhân viên mới, thiết lập targets
+            // 3. TÍNH TOÁN VÀ HIỂN THỊ
+            if (employeeSet.size > 0) {
+                const newEmployeeList = Array.from(employeeSet).sort();
+                
+                detectedEmployees = newEmployeeList.map(id => ({ 
+                    id: id, name: id.split(/ [-–] /)[0].trim(), checked: true, percent: 0 
+                }));
+                
+                // Tính toán Target ban đầu
+                const initialTargets = calculateInitialTargets(allContestHeadersGlobal);
+                
                 initialTargets.forEach((initial, id) => {
-                     const existing = finalEmployeeTargets.get(id) || {};
-                     finalEmployeeTargets.set(id, {
-                         ...initial,
-                         // Giữ lại % chỉnh sửa thủ công và trạng thái active nếu có
-                         manualDtPercent: existing.manualDtPercent !== undefined ? existing.manualDtPercent : initial.manualDtPercent,
-                         // manualContestPercent ban đầu lấy từ contestTargets (tính theo skill 3T)
-                         manualContestPercent: existing.manualContestPercent && Object.keys(existing.manualContestPercent).length > 0 ? existing.manualContestPercent : Object.fromEntries(initial.contest3MonthContribution),
-                         isActive: existing.isActive !== undefined ? existing.isActive : true, 
-                     });
-                 });
-            } else {
-                 // Nếu targets đã tồn tại, chỉ cập nhật các giá trị cố định (3T percentages) từ dữ liệu mới
-                 initialTargets.forEach((initial, id) => {
                      let existing = finalEmployeeTargets.get(id);
-                     if (existing) {
-                         existing.dtPercent3T = initial.dtPercent3T;
-                         existing.contest3MonthContribution = initial.contest3MonthContribution;
-                         existing.dtTarget = initial.dtTarget;
-                         existing.contestTargets = initial.contestTargets; // Target tuyệt đối theo skill
+                     
+                     // ĐẢM BẢO contest3MonthContribution LUÔN LÀ MAP
+                     let contest3MonthMap;
+                     if (initial.contest3MonthContribution instanceof Map) {
+                         contest3MonthMap = initial.contest3MonthContribution;
+                     } else {
+                         contest3MonthMap = new Map(Object.entries(initial.contest3MonthContribution || {}));
+                     }
+
+                     if (!existing) {
+                         finalEmployeeTargets.set(id, {
+                             ...initial,
+                             contest3MonthContribution: contest3MonthMap, // Gán đúng kiểu Map
+                             manualDtPercent: initial.dtPercent3T, 
+                             manualContestPercent: Object.fromEntries(contest3MonthMap),
+                             isActive: true
+                         });
+                     } else {
+                         // Cập nhật cái mới nhưng giữ cái cũ
+                         existing.contestTargets = initial.contestTargets;
+                         existing.contest3MonthContribution = contest3MonthMap; // Cập nhật Map mới nhất
                          
-                         // Cập nhật manualContestPercent nếu có ngành hàng mới (hoặc lần đầu chưa có)
                          if (!existing.manualContestPercent) existing.manualContestPercent = {};
-                         initial.contest3MonthContribution.forEach((percent, contestName) => {
+                         
+                         contest3MonthMap.forEach((percent, contestName) => {
                             if (existing.manualContestPercent[contestName] === undefined) {
-                                // Nếu chưa có % chỉnh sửa cho ngành hàng này, dùng % 3T Avg
                                 existing.manualContestPercent[contestName] = percent;
                             }
                          });
-
                          finalEmployeeTargets.set(id, existing);
                      }
                  });
+                 
+                 // Lưu vào storage (khi lưu nó sẽ biến Map thành Object, nhưng khi load lại ta phải parse cẩn thận)
+                 // Ở đây ta render trực tiếp từ biến finalEmployeeTargets đang ở trong RAM (là Map chuẩn)
+                 localStorage.setItem('finalEmployeeTargets', JSON.stringify(Object.fromEntries(finalEmployeeTargets)));
+                 
+                 renderTargetAllocationReport(finalEmployeeTargets, allContestHeadersGlobal);
+                 
+                 showToast(`✅ Thành công: ${employeeSet.size} NV & ${allContestHeadersGlobal.length} Ngành hàng!`);
+            
+            } else {
+                if (allContestHeadersGlobal.length > 0) {
+                    showToast(`⚠️ Đã thấy ${allContestHeadersGlobal.length} ngành hàng, nhưng chưa thấy Nhân viên.`);
+                    renderTargetAllocationReport(new Map(), allContestHeadersGlobal);
+                }
             }
+            
+            updateContestStatusUI();
 
-            // 3. Render immediately
-            localStorage.setItem('finalEmployeeTargets', JSON.stringify(Object.fromEntries(finalEmployeeTargets)));
-            renderTargetAllocationReport(finalEmployeeTargets, allContestHeadersGlobal);
-
-        } else {
-             detectedEmployees = [];
-             // Clear targets if no employees detected
-             finalEmployeeTargets = new Map();
-             renderTargetAllocationReport(finalEmployeeTargets, allContestHeadersGlobal);
+        } catch (error) {
+            console.error(error);
+            showToast("❌ Lỗi xử lý: " + error.message);
         }
-        // Vẫn phải gọi updateContestStatusUI để cập nhật số lượng (dù chưa apply bộ lọc)
-        updateContestStatusUI();
     }
-    
-    // Hàm này giờ chấp nhận list headers để tính toán chính xác
-    function calculateInitialTargets(targetContestHeaders = []) {
+	function calculateInitialTargets(targetContestHeaders = []) {
         if (detectedEmployees.length === 0) return new Map();
         
         const allEmployeeIds = detectedEmployees.map(e => e.id);
@@ -2194,7 +2190,7 @@
         document.getElementById('target-allocation-report-card').style.display = 'block';
     }
 
-    async function handlePaste(event) {
+async function handlePaste(event) {
         if (!event.target.classList.contains('btn-paste')) return;
         const targetId = event.target.dataset.target;
         const filterType = event.target.dataset.filter;
@@ -2203,6 +2199,7 @@
 
         try {
             const text = await navigator.clipboard.readText();
+            // Logic lọc dữ liệu cũ (giữ nguyên)
             const markers = {
                 table2: /^Ngành hàng\s+DTQĐ\s+Target/,
                 table6: /^Nhân viên\s+DTLK\s+DTQĐ/,
@@ -2211,25 +2208,27 @@
             const endMarker = "Hỗ trợ BI";
             const lines = text.split('\n');
             const startIndex = lines.findIndex(line => markers[filterType] && markers[filterType].test(line.trim()));
+            
             if (startIndex !== -1) {
                 let endIndex = lines.findIndex(line => line.includes(endMarker), startIndex);
                 if (endIndex === -1) endIndex = lines.length;
                 textarea.value = lines.slice(startIndex, endIndex).join('\n').trim();
-                showToast(`Đã dán và lọc dữ liệu cho ${targetId}!`);
-                
-                // Trigger extract
-                setTimeout(extractEmployeesFromInputs, 200);
             } else {
                 textarea.value = text;
-                showToast(`Đã dán dữ liệu (không tìm thấy điểm bắt đầu để lọc).`);
-                 // Trigger extract
-                setTimeout(extractEmployeesFromInputs, 200);
             }
+            
+            showToast(`Đã dán dữ liệu vào ${targetId}! Đang xử lý...`);
+            
+            // --- KÍCH HOẠT XỬ LÝ NGAY LẬP TỨC ---
+            setTimeout(() => {
+                extractEmployeesFromInputs();
+            }, 300); // Đợi 300ms để DOM cập nhật giá trị rồi mới chạy
+
         } catch (err) {
-            showToast('Không thể dán từ clipboard.');
+            console.error(err);
+            showToast('Lỗi khi dán: ' + err.message);
         }
     }
-
     // NEW: Hàm chụp ảnh và tải về
     function captureAndDownload(element, filename) {
         const commentsCard = document.getElementById('comments-card');
