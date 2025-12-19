@@ -3519,18 +3519,24 @@ async function handlePaste(event) {
         }
     }
     
-    function showContestDetailsPopup(contestName, event) {
+function showContestDetailsPopup(contestName, event) {
         event.preventDefault();
         const decodedContestName = decodeURIComponent(contestName);
-        if (!sortedContestHeadersGlobal.includes(decodedContestName)) return showToast(`Ngành hàng "${decodedContestName}" hiện không được hiển thị/chọn để theo dõi.`);
+        
+        // Kiểm tra xem ngành hàng này có tồn tại trong danh sách hiển thị không
+        if (!sortedContestHeadersGlobal.includes(decodedContestName)) {
+            return showToast(`Ngành hàng "${decodedContestName}" hiện không được hiển thị/chọn để theo dõi.`);
+        }
 
+        // Sắp xếp danh sách nhân viên theo % hoàn thành dự kiến của ngành hàng này
         const sortedByContest = [...finalData].sort((a, b) => {
             const perfA = a.contestCompletion[decodedContestName]?.projectedPercent || 0;
-            const perfB = b.contestCompletion[decodedContodedContestName]?.projectedPercent || 0;
+            // ĐÃ SỬA LỖI CHÍNH TẢ Ở DÒNG DƯỚI ĐÂY (trước đây là decodedContodedContestName)
+            const perfB = b.contestCompletion[decodedContestName]?.projectedPercent || 0;
             return perfB - perfA;
         });
 
-        // Lấy dữ liệu so sánh toàn bộ
+        // Lấy dữ liệu so sánh toàn bộ (nếu đang bật chế độ so sánh)
         const comparisonDataAll = comparisonResultsCache;
 
         let tableHtml = `
@@ -3578,7 +3584,6 @@ async function handlePaste(event) {
                     changeProjectedCellHtml = `<td></td>`;
                  }
             }
-
             
             tableHtml += `
                 <tr>
@@ -3597,7 +3602,6 @@ async function handlePaste(event) {
         document.getElementById('modal-body').innerHTML = tableHtml; 
         document.getElementById('kpi-modal').style.display = 'block';
     }
-
     // Cập nhật hàm này để nhận và sử dụng dữ liệu so sánh
     function renderAllEmployeeCards(data) {
         document.getElementById('allCardsContainer').innerHTML = data.map(employee => {
