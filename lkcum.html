@@ -265,6 +265,37 @@
         .category-list label { display: flex; align-items: center; padding: 8px 5px; cursor: pointer; border-bottom: 1px dotted #eee; font-size: 14px; }
         .category-list label:hover { background-color: #f3f4f6; }
         .category-list input[type="checkbox"] { margin-right: 10px; width: 16px; height: 16px; accent-color: #2563eb; }
+		/* --- SỬA CSS CHO BADGE TĂNG GIẢM --- */
+
+/* 1. Tạo khoảng trống bao quanh thanh tiến độ để chứa badge */
+.progress-wrapper-relative {
+    position: relative;
+    margin-top: 18px; /* Đẩy thanh tiến độ xuống để nhường chỗ cho badge ở trên */
+}
+
+/* 2. Class mới để căn badge ra giữa và nằm lên trên */
+.growth-badge-centered {
+    position: absolute;
+    top: -20px; /* Dịch chuyển lên phía trên thanh tiến độ */
+    left: 50%;  /* Canh giữa theo chiều ngang */
+    transform: translateX(-50%); /* Cân chỉnh lại chính xác tâm giữa */
+    z-index: 20; /* Đảm bảo nằm đè lên trên các phần tử khác */
+    
+    /* Style cho đẹp hơn */
+    font-size: 0.75rem; 
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 12px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.15); /* Đổ bóng nhẹ cho nổi */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+}
+
+/* Giữ nguyên màu sắc cũ nhưng đảm bảo nền không trong suốt để dễ đọc */
+.growth-up { background-color: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+.growth-down { background-color: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
     </style>
 </head>
 <body class="pb-20 text-gray-800">
@@ -384,10 +415,9 @@
                     <div id="clusterCompetitionContainer" class="p-4 grid grid-cols-1 lg:grid-cols-2 gap-6 border-t border-gray-100"></div>
                 </div>
                 
-                <div class="bg-gray-50 p-4 border-t border-gray-200">
-                    <div class="flex items-center justify-between mb-2">
-                         <h4 class="text-sm font-bold text-teal-700 uppercase"><i class="fas fa-file-alt mr-2"></i>Nhận xét (Dạng văn bản)</h4>
-                         <button onclick="copyTextById('clusterReportArea')" class="text-xs bg-white border border-gray-300 hover:bg-gray-100 text-gray-600 px-2 py-1 rounded shadow-sm font-bold">
+<div class="bg-gray-50 p-4 border-t border-gray-200 screenshot-exclude">
+    <div class="flex items-center justify-between mb-2">
+         <h4 class="text-sm font-bold text-teal-700 uppercase"><i class="fas fa-file-alt mr-2"></i>Nhận xét (Dạng văn bản)</h4>                         <button onclick="copyTextById('clusterReportArea')" class="text-xs bg-white border border-gray-300 hover:bg-gray-100 text-gray-600 px-2 py-1 rounded shadow-sm font-bold">
                             <i class="fas fa-copy"></i> Copy
                          </button>
                     </div>
@@ -932,12 +962,16 @@
             
             return new Promise((resolve) => {
                 setTimeout(() => {
-                    html2canvas(element, {
-                        scale: 2,
-                        useCORS: true,
-                        logging: false,
-                        backgroundColor: '#ffffff'
-                    }).then(canvas => {
+html2canvas(element, {
+    scale: 2,
+    useCORS: true,
+    logging: false,
+    backgroundColor: '#ffffff',
+    // Thêm đoạn này để bỏ qua phần nhận xét
+    ignoreElements: (node) => {
+        return node.classList && node.classList.contains('screenshot-exclude');
+    }
+}).then(canvas => {
                         const link = document.createElement('a');
                         link.download = `${fileNamePrefix}_${today.getDate()}_${today.getMonth()+1}.png`;
                         link.href = canvas.toDataURL("image/png");
@@ -1371,66 +1405,67 @@
             `;
         }
 
-        function renderCompetitionItem(item, isCluster, prevItem = null) {
-            // REDESIGNED TO MATCH NEW IMAGE (Image e882e7.png) + smaller progress bar
-            if (!item || item.target === 0) return '';
-            
-            const pctExpected = item.pct_expected;
-            const pctNow = item.pct_now;
-            
-            const isTargetMetExpected = pctExpected >= 100;
-            
-            // Percentage bar for expected completion (PCT_EXPECTED)
-            const barWidth = Math.min(pctExpected, 100); 
-            
-            // Màu chữ % HT Dự kiến: Xanh lá nếu đạt, Cam/Đỏ nếu chưa đạt
-            const expectedColor = isTargetMetExpected ? 'text-green-600' : 'text-orange-500';
-            // Màu thanh tiến độ: Xanh lá nếu đạt, Cam nếu chưa đạt
-            const progressBarColorClass = isTargetMetExpected ? '' : 'orange'; // Dùng class "orange" để đổi màu gradient
+	function renderCompetitionItem(item, isCluster, prevItem = null) {
+    // REDESIGNED TO MATCH NEW IMAGE (Image e882e7.png) + smaller progress bar
+    if (!item || item.target === 0) return '';
+    
+    const pctExpected = item.pct_expected;
+    const pctNow = item.pct_now;
+    
+    const isTargetMetExpected = pctExpected >= 100;
+    
+    // Percentage bar for expected completion (PCT_EXPECTED)
+    const barWidth = Math.min(pctExpected, 100); 
+    
+    // Màu chữ % HT Dự kiến: Xanh lá nếu đạt, Cam/Đỏ nếu chưa đạt
+    const expectedColor = isTargetMetExpected ? 'text-green-600' : 'text-orange-500';
+    // Màu thanh tiến độ: Xanh lá nếu đạt, Cam nếu chưa đạt
+    const progressBarColorClass = isTargetMetExpected ? '' : 'orange'; // Dùng class "orange" để đổi màu gradient
 
-            // Text values
-            const lkDisplay = formatMoney(item.lk);
-            const targetDisplay = formatMoney(item.target);
-            const pctExpectedDisplay = formatPct(pctExpected);
-            const pctNowDisplay = formatPct(pctNow);
+    // Text values
+    const lkDisplay = formatMoney(item.lk);
+    const targetDisplay = formatMoney(item.target);
+    const pctExpectedDisplay = formatPct(pctExpected);
+    const pctNowDisplay = formatPct(pctNow);
 
-            // LOGIC BADGE TĂNG GIẢM
-            let badgeHtml = '';
-            if (prevItem) {
-                const diff = item.lk - prevItem.lk;
-                if (diff !== 0) {
-                     const isUp = diff > 0;
-                     const badgeClass = isUp ? 'growth-up' : 'growth-down';
-                     const arrow = isUp ? '<i class="fas fa-caret-up"></i>' : '<i class="fas fa-caret-down"></i>';
-                     badgeHtml = `<span class="growth-badge ${badgeClass} growth-badge-float">${arrow} ${formatMoney(Math.abs(diff))}</span>`;
-                }
-            }
-
-
-            return `
-            <div class="comp-item-new last:border-b-0">
-                <div class="comp-item-main-row">
-                    <div class="comp-item-left-col">
-                        <span class="comp-item-rank">${item.index}</span>
-                        <div class="flex flex-col">
-                            <div class="comp-item-category">${item.category}</div>
-                            <span class="comp-item-lk-target">LK: ${lkDisplay} | Mục tiêu: ${targetDisplay}</span>
-                        </div>
-                    </div>
-                    <div class="comp-item-right-col">
-                        <span class="comp-item-pct-expected ${expectedColor}">${pctExpectedDisplay}</span>
-                        <div class="comp-item-ht-now">HT: ${pctNowDisplay}</div>
-                    </div>
-                </div>
-
-                <div class="comp-item-progress-track">
-                    <div class="comp-item-progress-fill ${progressBarColorClass}" style="width: ${barWidth}%">
-                         ${badgeHtml}
-                    </div>
-                </div>
-                
-            </div>`;
+    // LOGIC BADGE TĂNG GIẢM (Đã sửa vị trí)
+    let badgeHtml = '';
+    if (prevItem) {
+        const diff = item.lk - prevItem.lk;
+        if (diff !== 0) { // Chỉ hiện nếu có thay đổi khác 0
+             const isUp = diff > 0;
+             const badgeClass = isUp ? 'growth-up' : 'growth-down';
+             const arrow = isUp ? '<i class="fas fa-caret-up mr-1"></i>' : '<i class="fas fa-caret-down mr-1"></i>';
+             
+             // SỬA: Dùng class mới growth-badge-centered
+             badgeHtml = `<span class="growth-badge-centered ${badgeClass}">${arrow} ${formatMoney(Math.abs(diff))}</span>`;
         }
+    }
+
+    return `
+    <div class="comp-item-new last:border-b-0">
+        <div class="comp-item-main-row">
+            <div class="comp-item-left-col">
+                <span class="comp-item-rank">${item.index}</span>
+                <div class="flex flex-col">
+                    <div class="comp-item-category">${item.category}</div>
+                    <span class="comp-item-lk-target">LK: ${lkDisplay} | Mục tiêu: ${targetDisplay}</span>
+                </div>
+            </div>
+            <div class="comp-item-right-col">
+                <span class="comp-item-pct-expected ${expectedColor}">${pctExpectedDisplay}</span>
+                <div class="comp-item-ht-now">HT: ${pctNowDisplay}</div>
+            </div>
+        </div>
+
+        <div class="progress-wrapper-relative">
+            ${badgeHtml} <div class="comp-item-progress-track">
+                <div class="comp-item-progress-fill ${progressBarColorClass}" style="width: ${barWidth}%"></div>
+            </div>
+        </div>
+        
+    </div>`;
+}
         
         function createCompetitionColumn(title, items, isStoreDetail, prevStoreData = null) {
             // REDESIGNED TO MATCH NEW IMAGE HEADER
@@ -1595,11 +1630,10 @@
                             
                             ${renderNewKpiLayout(s, false, compData)}
 
-                            ${compDetail}
-                            <div class="bg-gray-50 p-4 border-t border-gray-200">
-                                <div class="flex items-center justify-between mb-2">
-                                    <h4 class="text-sm font-bold text-teal-700 uppercase"><i class="fas fa-file-alt mr-2"></i>Nhận xét (Dạng văn bản)</h4>
-                                    <button onclick="copyTextById('${reportId}')" class="text-xs bg-white border border-gray-300 hover:bg-gray-100 text-gray-600 px-2 py-1 rounded shadow-sm font-bold">
+${compDetail}
+<div class="bg-gray-50 p-4 border-t border-gray-200 screenshot-exclude">
+    <div class="flex items-center justify-between mb-2">
+        <h4 class="text-sm font-bold text-teal-700 uppercase"><i class="fas fa-file-alt mr-2"></i>Nhận xét (Dạng văn bản)</h4>                                    <button onclick="copyTextById('${reportId}')" class="text-xs bg-white border border-gray-300 hover:bg-gray-100 text-gray-600 px-2 py-1 rounded shadow-sm font-bold">
                                         <i class="fas fa-copy"></i> Copy
                                     </button>
                                 </div>
