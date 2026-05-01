@@ -1064,25 +1064,26 @@
     function getContestTimeframe(header) {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        const currentYear = today.getFullYear();
+        
+        // Neo ngày báo cáo là HÔM QUA (vì dữ liệu BI thường là lũy kế đến hết ngày hôm qua)
+        const reportDate = new Date(today);
+        reportDate.setDate(today.getDate() - 1);
+        
+        const currentYear = reportDate.getFullYear();
         let passedDays, totalDays;
 
-        // Tính toán số ngày đã qua (Passed Days) và tổng số ngày trong khung thời gian (Total Days)
-        // Số ngày còn lại = Total Days - Passed Days (hoặc Today.getDate())
+        // Tính toán số ngày đã qua và tổng số ngày dựa trên reportDate
+        totalDays = new Date(currentYear, reportDate.getMonth() + 1, 0).getDate();
+        passedDays = reportDate.getDate();
         
-        // Lấy tổng số ngày của tháng hiện tại
-        totalDays = new Date(currentYear, today.getMonth() + 1, 0).getDate();
-        // Số ngày đã trôi qua (Tính đến HÔM QUA)
-        passedDays = today.getDate() - 1; 
-        
-        // Số ngày còn lại (bao gồm cả hôm nay) = Total Days - Passed Days = Total Days - (Today - 1)
         const remainingDays = totalDays - passedDays;
         
-        // Mặc định cho trường hợp không xác định khung T(x)-T(y)
+        // Mặc định cho trường hợp không xác định khung T(x)-T(y) (ví dụ: Doanh thu)
         const defaultTimeframe = { 
             passedDays: Math.max(1, passedDays), 
             totalDays,
-            remainingDays: Math.max(1, remainingDays) 
+            remainingDays: Math.max(1, remainingDays),
+            reportDate: reportDate
         };
         
         const match = header.match(/\(\s*T(\d+)\s*-\s*T(\d+)\s*\)/);
@@ -1115,7 +1116,8 @@
                 return { 
                     passedDays: Math.max(1, passedDaysInContest), 
                     totalDays: totalDaysInContest,
-                    remainingDays: Math.max(1, remainingDaysInContest) // Số ngày còn lại (kể cả hôm nay)
+                    remainingDays: Math.max(1, remainingDaysInContest),
+                    reportDate: reportDate
                 };
             } catch (e) { return defaultTimeframe; }
         }
@@ -2215,8 +2217,8 @@
         document.getElementById('comments-card').style.display = 'block';
         document.getElementById('kpi-cards-section').style.display = 'block';
         
-        const today = new Date();
-        document.getElementById('reportTitle').textContent = `Báo cáo đánh giá nhân viên đến ngày ${today.toLocaleDateString('vi-VN')}`;
+        const reportDate = timeframe.reportDate || new Date();
+        document.getElementById('reportTitle').textContent = `Báo cáo đánh giá nhân viên đến ngày ${reportDate.toLocaleDateString('vi-VN')}`;
         document.getElementById('month-progress-container').innerHTML = `
             <div class="progress-bar-wrapper" style="margin-top:0;">
                 <div class="progress-bar-label"><span>Tiến độ Tháng</span><span>${(timeframe.passedDays / timeframe.totalDays * 100).toFixed(1)}%</span></div>
