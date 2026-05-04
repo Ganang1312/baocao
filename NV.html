@@ -353,12 +353,10 @@
             width: 18px; 
             height: 18px; 
             accent-color: var(--primary-accent); 
-            pointer-events: none; /* Quan trọng: Ngăn checkbox tự phản ứng với click */
         }
         .contest-item label { 
             flex-grow: 1; 
             cursor: pointer; 
-            pointer-events: none; /* Quan trọng: Cho phép click vào dòng để kích hoạt sự kiện */
         }
         /* END NEW CSS */
 
@@ -871,11 +869,9 @@
             <!-- END NEW: Nhập/Xuất Panel -->
             
             <div style="margin-bottom: 15px;">
-                <!-- ĐÃ SỬA LỖI: Chỉ gán sự kiện cho hàng item con, loại bỏ sự kiện toggleCheckboxInModal khỏi đây -->
                 <div class="contest-item">
-                    <!-- ĐÃ SỬA LỖI: Thêm sự kiện onclick và stopPropagation để chỉ checkbox hoạt động khi click vào nó -->
                     <input type="checkbox" id="modalSelectAllContests" onclick="event.stopPropagation(); toggleAllModalContests(this.checked);">
-                    <label for="modalSelectAllContests" style="font-weight: bold; color: var(--primary-accent);">**Chọn tất cả**</label>
+                    <label for="modalSelectAllContests" style="font-weight: bold; color: var(--primary-accent);">Chọn tất cả</label>
                 </div>
             </div>
             <div id="contest-list">
@@ -2002,12 +1998,12 @@
             // 2. Phân tích dữ liệu để lấy ALL contest headers (CHỈ LÀM LẦN ĐẦU)
             if (!skipHeaderExtraction || allContestHeadersGlobal.length === 0) {
                 const lines7 = inputs.data7.split('\n').filter(line => line.trim());
-                const subHeaderIndex7 = lines7.findIndex(line => line.trim().startsWith('SLLK'));
+                const subHeaderIndex7 = lines7.findIndex(line => line.trim().startsWith('SLLK') || line.trim().startsWith('DTLK'));
                 let allHeaders = lines7.slice(1, subHeaderIndex7).map(h => h.trim()).filter(Boolean);
                 
-                const invalidHeaderKeywords = ['DTLK', 'SLLK', 'Tổng', 'BP All In One', 'Nguyễn', 'Bùi', 'Dương', 'Đỗ', 'Trần', 'Lê', 'Phạm', 'Hoàng', 'Phan', 'Vũ', 'Đặng', 'Thị'];
+                const invalidHeaderKeywords = ['DTLK', 'SLLK', 'TỔNG CỘNG', 'Tổng', 'BP All In One'];
                 allContestHeadersGlobal = allHeaders.filter(header => {
-                    return !invalidHeaderKeywords.some(keyword => header.includes(keyword));
+                    return !invalidHeaderKeywords.some(keyword => header.toUpperCase().includes(keyword.toUpperCase()));
                 });
 
                 // Nếu là lần đầu, gán selectedContestHeaders = allContestHeadersGlobal (Hiển thị tất cả)
