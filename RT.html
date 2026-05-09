@@ -423,6 +423,18 @@
                     </div>
                 </div>
             </div>
+            <div class="input-section">
+                <h4>Target Tùy chỉnh (Ghi đè)</h4>
+                <div class="input-wrapper" style="gap: 12px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <input type="number" id="customTargetInput" placeholder="Nhập Target..." style="flex: 1; padding: 10px; border: 1px solid var(--border-main); border-radius: 8px; font-weight: bold; font-size: 1.1em;">
+                        <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; font-weight: 700; color: var(--primary-accent); white-space: nowrap;">
+                            <input type="checkbox" id="useCustomTarget"> Sử dụng
+                        </label>
+                    </div>
+                    <p style="font-size: 0.85em; color: var(--text-muted); margin: 0; line-height: 1.4;">Khi được tích, hệ thống sẽ sử dụng số này làm Target Tổng thay vì lấy từ dữ liệu dán vào.</p>
+                </div>
+            </div>
          </div>
          <div class="button-container">
             <button id="analyzeBtn-rt" class="action-btn analyzeBtn">TẠO DASHBOARD REAL-TIME</button>
@@ -683,6 +695,9 @@
             document.getElementById('realtimeDataInput').value = localStorage.getItem('realtimeMainData') || '';
             document.getElementById('realtimeContestDataInput').value = localStorage.getItem('realtimeContestData') || '';
             document.getElementById('employeeSalesDataInput').value = localStorage.getItem('employeeSalesData') || '';
+            
+            document.getElementById('customTargetInput').value = localStorage.getItem('customTargetValue') || '';
+            document.getElementById('useCustomTarget').checked = localStorage.getItem('useCustomTarget') === 'true';
         } catch (e) {
             console.error("Could not access localStorage. Data will not be saved.", e);
             showToast("Không thể truy cập bộ nhớ cục bộ. Dữ liệu sẽ không được lưu.", true);
@@ -707,6 +722,9 @@
                 localStorage.setItem('realtimeMainData', mainDataRaw);
                 localStorage.setItem('realtimeContestData', contestDataRaw);
                 localStorage.setItem('employeeSalesData', employeeDataRaw);
+                
+                localStorage.setItem('customTargetValue', document.getElementById('customTargetInput').value);
+                localStorage.setItem('useCustomTarget', document.getElementById('useCustomTarget').checked);
             } catch(e) {
                 console.error("Could not access localStorage. Data will not be saved.", e);
             }
@@ -995,6 +1013,14 @@
 
             const totalRow = mainData.find(row => row["Nhóm ngành hàng"].toLowerCase() === "tổng");
             if (!totalRow) throw new Error("Không tìm thấy dòng 'Tổng' trong dữ liệu Realtime.");
+            
+            // Xử lý Target tùy chỉnh nếu được tích chọn
+            const useCustomTarget = document.getElementById('useCustomTarget').checked;
+            const customTargetValue = parseFloat(document.getElementById('customTargetInput').value) || 0;
+            if (useCustomTarget && customTargetValue > 0) {
+                totalRow['Target Ngày (QĐ)'] = customTargetValue;
+                totalRow['% HT Target Ngày (QĐ)'] = totalRow['DT Realtime (QĐ)'] > 0 ? (totalRow['DT Realtime (QĐ)'] / customTargetValue * 100) : 0;
+            }
             
             const processedContestData = processRealtimeContestData(contestData); 
 

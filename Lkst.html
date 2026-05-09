@@ -11,7 +11,7 @@
         :root { --primary-accent: #108AB1; --success-color: #06D7A0; --warning-color: #FFD167; --danger-color: #F04770; --secondary-accent: #F78C6A; --text-primary: #073A4B; --text-on-dark: #FFFFFF; --text-muted: #5A7A84; --bg-main: #F4F7F9; --border-main: #DDE3E7; --shadow-main: 0px 2.8px 2.2px rgba(7, 58, 75, 0.02), 0px 6.7px 5.3px rgba(7, 58, 75, 0.028), 0px 12.5px 10px rgba(7, 58, 75, 0.035), 0px 22.3px 17.9px rgba(7, 58, 75, 0.042), 0px 41.8px 33.4px rgba(7, 58, 75, 0.05), 0px 100px 80px rgba(7, 58, 75, 0.07); }
         /* ADDED: Hide controls in capture mode */
         .capture-mode .card, .capture-mode .input-section, .capture-mode .action-btn { box-shadow: none !important; transform: none !important; transition: none !important; }
-        .capture-mode #contestComparisonControls { display: none !important; }
+        .capture-mode #contestComparisonControls, .capture-mode .chart-toggle-btn, .capture-mode .chart-controls-container { display: none !important; }
         
         html, body { width: 100%; margin: 0; padding: 0; overflow-x: hidden; background-color: var(--bg-main); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; color: var(--text-primary); }
         .container { width: 100%; max-width: 100%; margin: 0; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; gap: 25px; }
@@ -21,8 +21,13 @@
         /* UPDATED GRID FOR 4 COLUMNS IN 1 ROW */
         .input-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
         
-        .input-section, .card { background: #ffffff; padding: 15px; border-radius: 15px; border: 1px solid var(--border-main); box-shadow: var(--shadow-main); transition: transform 0.3s ease, box-shadow 0.3s ease; overflow: hidden; display: flex; flex-direction: column; }
-        .card:hover { transform: translateY(-5px); }
+        .input-section, .card { background: #ffffff; padding: 15px; border-radius: 15px; border: 1px solid var(--border-main); box-shadow: var(--shadow-main); transition: transform 0.3s ease, box-shadow 0.3s ease; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+        .card:hover { transform: translateY(-3px); }
+        .chart-toggle-btn { position: absolute; top: 20px; right: 20px; background: #f0f0f0; border: none; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-muted); transition: all 0.2s; z-index: 10; }
+        .chart-toggle-btn:hover { background-color: var(--primary-accent); color: white; transform: scale(1.1); }
+        .chart-hidden { display: none !important; }
+        .chart-wrapper.card { flex: 1 1 calc(50% - 13px); min-width: 450px; }
+        @media (max-width: 1000px) { .chart-wrapper.card { flex: 1 1 100%; min-width: 100%; } }
         .input-section h4 { margin-top: 0; color: var(--text-muted); font-size: 0.95em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .input-section h4 a { color: inherit; text-decoration: none; transition: color 0.2s; }
         .input-section h4 a:hover { color: var(--primary-accent); }
@@ -347,6 +352,14 @@
         <div id="dashboard-body-luyke" class="dashboard-body">
             <div id="capture-area-luyke">
                 <div id="capture-content-luyke">
+                    <!-- NEW: Central Chart Visibility Controls moved above title -->
+                    <div id="chartVisibilityControls" class="chart-controls-container" style="display: flex; gap: 20px; align-items: center; justify-content: center; margin-bottom: 15px; flex-wrap: nowrap; background: #eef4f7; padding: 10px 20px; border-radius: 12px; border: 1px solid var(--border-main);">
+                        <span style="font-weight: 800; color: var(--primary-accent); white-space: nowrap;">Hiện biểu đồ:</span>
+                        <label style="cursor:pointer; font-weight: 600; white-space: nowrap; display: flex; align-items: center; gap: 5px;"><input type="checkbox" id="yearly-revenue-chart-checkbox" checked onchange="toggleChartVisibility('yearly-revenue-chart-wrapper', this)"> Năm</label>
+                        <label style="cursor:pointer; font-weight: 600; white-space: nowrap; display: flex; align-items: center; gap: 5px;"><input type="checkbox" id="daily-comparison-chart-checkbox" checked onchange="toggleChartVisibility('daily-comparison-chart-wrapper', this)"> Ngày</label>
+                        <label style="cursor:pointer; font-weight: 600; white-space: nowrap; display: flex; align-items: center; gap: 5px;"><input type="checkbox" id="contribution-chart-checkbox" checked onchange="toggleChartVisibility('contribution-chart-wrapper', this)"> Tỷ trọng</label>
+                        <label style="cursor:pointer; font-weight: 600; white-space: nowrap; display: flex; align-items: center; gap: 5px;"><input type="checkbox" id="growth-chart-checkbox" checked onchange="toggleChartVisibility('growth-chart-wrapper', this)"> Tăng trưởng</label>
+                    </div>
                     <div id="reportTitleLuyKe" class="report-title"></div>
                     <div class="progress-bar-container card">
                         <div class="progress-labels"><span>Tiến độ Tháng</span><span id="progress-summary-date"></span></div>
@@ -361,14 +374,16 @@
                     
                     <div id="kpi-group-container" class="kpi-group-container"></div>
                     
-                    <div class="dashboard-layout-grid two-cols" id="mainChartGrid">
-                        <div class="charts-column main-charts">
+                    <div id="mainChartGrid" style="display: flex; flex-direction: column; gap: 25px;">
+                        <!-- Hàng 1: Doanh thu Năm & So sánh Ngày -->
+                        <div id="topChartsRow" style="display: flex; flex-wrap: wrap; gap: 25px;">
                             <div class="chart-wrapper card" id="yearly-revenue-chart-wrapper"></div>
                             <div class="chart-wrapper card" id="daily-comparison-chart-wrapper"></div>
                         </div>
-                        <div class="charts-column side-charts">
-                            <div class="chart-wrapper card" id="contribution-chart-wrapper"></div>
-                            <div class="chart-wrapper card" id="growth-chart-wrapper"></div>
+                        <!-- Hàng 2: Tỷ trọng & Tăng giảm (Luôn cùng hàng) -->
+                        <div id="bottomChartsRow" style="display: flex; gap: 25px; width: 100%;">
+                            <div class="chart-wrapper card" id="contribution-chart-wrapper" style="flex: 1 1 0; min-width: 0;"></div>
+                            <div class="chart-wrapper card" id="growth-chart-wrapper" style="flex: 1 1 0; min-width: 0;"></div>
                         </div>
                     </div>
                     
@@ -1097,7 +1112,8 @@
     function renderYearlyRevenueChart(yearlyData, kpis, reportDate) {
         const wrapper = document.getElementById('yearly-revenue-chart-wrapper');
         if (!yearlyData || yearlyData.length === 0 || yearlyData.every(d => (d['Doanh thu tháng'] === 0 && d['Target tháng'] === 0))) { hideYearlyRevenueChart(); return; }
-        wrapper.innerHTML = `<h2><svg class="title-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M9,10H7V12H9V10M13,10H11V12H13V10M17,10H15V12H17V10M19,3A2,2 0 0,1 21,5V19A2,2 0 0,1 19,21H5A2,2 0 0,1 3,19V5A2,2 0 0,1 5,3H6V1H8V3H16V1H18V3H19M19,19V8H5V19H19Z"/></svg>Doanh thu Năm</h2><div class="chart-container" style="height: 300px;"><canvas id="yearlyRevenueChart"></canvas></div>`;
+        const toggleBtn = `<button class="chart-toggle-btn" onclick="toggleChartVisibility('yearly-revenue-chart-wrapper')" title="Ẩn biểu đồ"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,4.5C7,4.5 2.73,7.61 1,12C2.73,16.39 7,19.5 12,19.5C17,19.5 21.27,16.39 23,12C21.27,7.61 17,4.5 12,4.5Z" /></svg></button>`;
+        wrapper.innerHTML = `${toggleBtn}<h2><svg class="title-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M9,10H7V12H9V10M13,10H11V12H13V10M17,10H15V12H17V10M19,3A2,2 0 0,1 21,5V19A2,2 0 0,1 19,21H5A2,2 0 0,1 3,19V5A2,2 0 0,1 5,3H6V1H8V3H16V1H18V3H19M19,19V8H5V19H19Z"/></svg>Doanh thu Năm</h2><div class="chart-container" style="height: 300px;"><canvas id="yearlyRevenueChart"></canvas></div>`;
         const currentMonth = reportDate.getMonth() + 1;
         new Chart('yearlyRevenueChart', { type: 'bar', data: { labels: yearlyData.map(d => `Th ${d['Tháng']}`), datasets: [{ label: 'Target tháng', data: yearlyData.map(d => d['Target tháng']), backgroundColor: VIBRANT_PALETTE[0], borderColor: VIBRANT_PALETTE[0], borderWidth: 1, datalabels: { color: 'var(--text-muted)', anchor: 'end', align: 'top', formatter: (value) => value > 0 ? formatNumber(value) : '' } }, { label: 'Doanh thu thực hiện', data: yearlyData.map(d => parseInt(d['Tháng']) === currentMonth ? kpis.dtDuKien : d['Doanh thu tháng']), backgroundColor: VIBRANT_PALETTE[4], borderColor: VIBRANT_PALETTE[4], borderWidth: 1, datalabels: { color: 'var(--text-primary)', anchor: 'end', align: 'top', offset: -5, font: { weight: 'bold' }, formatter: (value, context) => { if (!value || value === 0) return ''; const targetValue = context.chart.data.datasets[0].data[context.dataIndex]; return `${formatNumber(value)}\n${targetValue > 0 ? `(${(value / targetValue * 100).toFixed(0)}%)` : ''}`; } } }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' }, datalabels: { display: true } }, scales: { y: { beginAtZero: true, grid: { display: false }, ticks: { callback: function(value) { return formatNumber(value); } } }, x: { grid: { display: false } } } } });
         allChartsLuyKe.push(Chart.getChart("yearlyRevenueChart"));
@@ -1106,7 +1122,8 @@
     function renderDailyComparisonChart(dailyData, yearlyData, kpis, reportDate, daysInMonth) {
         const wrapper = document.getElementById('daily-comparison-chart-wrapper');
         if (!dailyData || dailyData.length === 0 || dailyData.every(d => (d['DT Tháng này'] === 0 && d['DT Tháng trước'] === 0))) { hideDailyComparisonChart(); return; }
-        wrapper.innerHTML = `<h2><svg class="title-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M19,19H5V8H19M16,1V3H8V1H6V3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5A2,2 0 0,0 19,3H18V1M17,12H12V17H17V12Z"/></svg>So sánh Doanh thu Ngày</h2><div class="chart-container" style="height: 300px;"><canvas id="dailyComparisonChart"></canvas></div>`;
+        const toggleBtn = `<button class="chart-toggle-btn" onclick="toggleChartVisibility('daily-comparison-chart-wrapper')" title="Ẩn biểu đồ"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,4.5C7,4.5 2.73,7.61 1,12C2.73,16.39 7,19.5 12,19.5C17,19.5 21.27,16.39 23,12C21.27,7.61 17,4.5 12,4.5Z" /></svg></button>`;
+        wrapper.innerHTML = `${toggleBtn}<h2><svg class="title-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M19,19H5V8H19M16,1V3H8V1H6V3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5A2,2 0 0,0 19,3H18V1M17,12H12V17H17V12Z"/></svg>So sánh Doanh thu Ngày</h2><div class="chart-container" style="height: 300px;"><canvas id="dailyComparisonChart"></canvas></div>`;
         const monthTarget = yearlyData.find(row => parseInt(row['Tháng']) === reportDate.getMonth() + 1)?.['Target tháng'] || 0;
         const dailyTarget = monthTarget > 0 && daysInMonth > 0 ? monthTarget / daysInMonth : (kpis.target > 0 && daysInMonth > 0 ? kpis.target / daysInMonth : 0);
         const thisMonthRevenue = new Array(daysInMonth).fill(null), lastMonthRevenue = new Array(daysInMonth).fill(null);
@@ -1124,8 +1141,11 @@
     
     function renderLuyKeCharts(data) {
         const chartData = data.filter(row => row["DTQĐ"] > 0), growthData = data.filter(r => r.DTQĐ !== 0 || (r["+/- DTCK Tháng (QĐ)"] !== 0 && r["+/- DTCK Tháng (QĐ)"] !== -100));
-        document.getElementById('contribution-chart-wrapper').innerHTML = `<h2><svg class="title-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M11 2v9h9a9 9 0 00-9-9zm2 1.08a7 7 0 016.92 6.92H13V3.08zM4 12a8 8 0 018-8v8H4zm9 8a8 8 0 01-8-8h8v8z"/></svg>Tỷ trọng Doanh thu</h2><div class="chart-container" style="height: 300px;"><canvas id="contributionChart"></canvas></div>`;
-        document.getElementById('growth-chart-wrapper').innerHTML = `<h2><svg class="title-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M22,21H2V3H4V19H22V21M18,17V9H20V17H18M14,17V12H16V17H14M10,17V5H12V17H10M6,17V14H8V17H6Z"/></svg>Tăng/Giảm Cùng kỳ</h2><div class="chart-container" style="height: 300px;"><canvas id="growthDriverChart"></canvas></div>`;
+        const toggleContrib = `<button class="chart-toggle-btn" onclick="toggleChartVisibility('contribution-chart-wrapper')" title="Ẩn biểu đồ"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,4.5C7,4.5 2.73,7.61 1,12C2.73,16.39 7,19.5 12,19.5C17,19.5 21.27,16.39 23,12C21.27,7.61 17,4.5 12,4.5Z" /></svg></button>`;
+        const toggleGrowth = `<button class="chart-toggle-btn" onclick="toggleChartVisibility('growth-chart-wrapper')" title="Ẩn biểu đồ"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,4.5C7,4.5 2.73,7.61 1,12C2.73,16.39 7,19.5 12,19.5C17,19.5 21.27,16.39 23,12C21.27,7.61 17,4.5 12,4.5Z" /></svg></button>`;
+        
+        document.getElementById('contribution-chart-wrapper').innerHTML = `${toggleContrib}<h2><svg class="title-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M11 2v9h9a9 9 0 00-9-9zm2 1.08a7 7 0 016.92 6.92H13V3.08zM4 12a8 8 0 018-8v8H4zm9 8a8 8 0 01-8-8h8v8z"/></svg>Tỷ trọng Doanh thu</h2><div class="chart-container" style="height: 300px;"><canvas id="contributionChart"></canvas></div>`;
+        document.getElementById('growth-chart-wrapper').innerHTML = `${toggleGrowth}<h2><svg class="title-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M22,21H2V3H4V19H22V21M18,17V9H20V17H18M14,17V12H16V17H14M10,17V5H12V17H10M6,17V14H8V17H6Z"/></svg>Tăng/Giảm Cùng kỳ</h2><div class="chart-container" style="height: 300px;"><canvas id="growthDriverChart"></canvas></div>`;
         
         const sortedDataByDT = [...chartData].sort((a, b) => b.DTQĐ - a.DTQĐ), totalDT = sortedDataByDT.reduce((s, r) => s + r.DTQĐ, 0), threshold = 0.05 * totalDT;
         const topCategories = [], otherCategories = [];
@@ -1456,7 +1476,12 @@
             const mainKpis = { luyKe, target, htTarget: luyKe > 0 && target > 0 ? (luyKe/target*100) : 0, growthRate, dtDuKien, htDuKien: target > 0 ? (dtDuKien / target * 100) : 0, chenhLech: chenhLech, mucTieuNgay: daysRemaining > 0 ? (target - luyKe) / daysRemaining : 0, tyTrongTraGop: totalRow["Tỷ Trọng Trả Góp"], doanhThuTraGop: totalRow["DT Trả Góp"] };
 
             const processedContestData = processFullContestData(contestData, daysRemaining);
-            allContestCategories = getUniqueContestCategories(processedContestData);
+            
+            // Lấy danh sách ngành hàng từ cả Bảng Thi Đua và Bảng Kinh Doanh để đảm bảo hiển thị đầy đủ
+            const categoriesFromContest = getUniqueContestCategories(processedContestData);
+            const categoriesFromMain = mainData.filter(row => row["Nhóm ngành hàng"] && row["Nhóm ngành hàng"] !== "Tổng").map(row => row["Nhóm ngành hàng"]);
+            allContestCategories = Array.from(new Set([...categoriesFromContest, ...categoriesFromMain])).sort();
+            
             loadContestCategoryFilter(allContestCategories); 
             const selectAllCheckbox = document.getElementById('selectAllContestCategories');
             if (selectAllCheckbox) { const isAll = currentSelectedCategories.length === allContestCategories.length; selectAllCheckbox.checked = isAll; document.getElementById('openCategorySelectModal').disabled = isAll; }
@@ -1465,33 +1490,20 @@
             renderLuyKeKPIs(mainKpis, daysUsed, daysInMonth, yearlyData, reportDate);
             renderLuyKeCharts(categoryData);
             
-            const yearlyCard = document.getElementById('yearly-revenue-chart-wrapper').closest('.card'), dailyCard = document.getElementById('daily-comparison-chart-wrapper').closest('.card'), contributionCard = document.getElementById('contribution-chart-wrapper').closest('.card'), growthCard = document.getElementById('growth-chart-wrapper').closest('.card');
-            const mainChartsColumn = document.getElementById('mainChartGrid').querySelector('.charts-column.main-charts'), sideChartsColumn = document.getElementById('mainChartGrid').querySelector('.charts-column.side-charts');
-            if (yearlyCard) mainChartsColumn.appendChild(yearlyCard); if (dailyCard) mainChartsColumn.appendChild(dailyCard); if (contributionCard) sideChartsColumn.appendChild(contributionCard); if (growthCard) sideChartsColumn.appendChild(growthCard);
+            const yearlyCard = document.getElementById('yearly-revenue-chart-wrapper'), dailyCard = document.getElementById('daily-comparison-chart-wrapper'), contributionCard = document.getElementById('contribution-chart-wrapper'), growthCard = document.getElementById('growth-chart-wrapper');
 
             const hasYearlyData = yearlyData && yearlyData.length > 0 && yearlyData.some(d => d['Doanh thu tháng'] > 0 || d['Target tháng'] > 0);
             const hasDailyData = dailyData && dailyData.length > 0 && dailyData.some(d => d['DT Tháng này'] > 0 || d['DT Tháng trước'] > 0);
+            
             if (hasYearlyData) renderYearlyRevenueChart(yearlyData, mainKpis, reportDate); else hideYearlyRevenueChart();
             if (hasDailyData) renderDailyComparisonChart(dailyData, yearlyData, mainKpis, reportDate, daysInMonth); else hideDailyComparisonChart();
 
-            yearlyCard.style.display = hasYearlyData ? 'flex' : 'none'; dailyCard.style.display = hasDailyData ? 'flex' : 'none';
-            const mainGrid = document.getElementById('mainChartGrid');
-            mainGrid.classList.remove('two-cols', 'single-col'); mainChartsColumn.style.display = 'flex'; sideChartsColumn.style.display = 'flex';
-            mainChartsColumn.classList.remove('main-charts-row'); sideChartsColumn.style.gridColumn = ''; sideChartsColumn.style.flexDirection = 'column';
-
-            const numActive = (hasYearlyData ? 1 : 0) + (hasDailyData ? 1 : 0);
-            if (numActive === 2) mainGrid.classList.add('two-cols');
-            else if (numActive === 1) {
-                mainGrid.classList.add('single-col'); mainChartsColumn.classList.add('main-charts-row');
-                if (contributionCard.parentElement !== mainChartsColumn) mainChartsColumn.appendChild(contributionCard);
-                if (growthCard.parentElement !== mainChartsColumn) mainChartsColumn.appendChild(growthCard);
-                sideChartsColumn.style.display = 'none';
-            } else {
-                mainGrid.classList.add('single-col'); mainChartsColumn.style.display = 'none';
-                if (contributionCard.parentElement !== sideChartsColumn) sideChartsColumn.appendChild(contributionCard);
-                if (growthCard.parentElement !== sideChartsColumn) sideChartsColumn.appendChild(growthCard);
-                sideChartsColumn.style.gridColumn = '1 / -1'; sideChartsColumn.style.flexDirection = 'row'; sideChartsColumn.style.flexWrap = 'wrap';
-            }
+            // Tự động ẩn hiện dựa trên dữ liệu và cập nhật checkbox
+            yearlyCard.classList.toggle('chart-hidden', !hasYearlyData);
+            document.getElementById('yearly-revenue-chart-checkbox').checked = hasYearlyData;
+            
+            dailyCard.classList.toggle('chart-hidden', !hasDailyData);
+            document.getElementById('daily-comparison-chart-checkbox').checked = hasDailyData;
 
             const { current, previous } = getInitialComparisonDates();
             renderLuyKeCategoryTables(categoryData, current, previous);
@@ -1500,8 +1512,27 @@
             const specificGrid = document.querySelector('#specificTablesContainer .dashboard-layout-grid');
             if (specificGrid) specificGrid.style.gridTemplateColumns = '1fr';
             renderLuyKeSummary(mainKpis, processedContestData, reportDate);
-        } 
+        }
     }
-	</script>
+
+    // Move to global scope so onclick can find it
+    function toggleChartVisibility(id, sourceElement = null) {
+        const el = document.getElementById(id);
+        if (el) {
+            if (sourceElement && sourceElement.type === 'checkbox') {
+                // Nếu gọi từ checkbox ở bảng điều khiển trung tâm
+                el.classList.toggle('chart-hidden', !sourceElement.checked);
+            } else {
+                // Nếu gọi từ nút bấm (eye icon) trên chính biểu đồ
+                el.classList.toggle('chart-hidden');
+                // Cập nhật lại checkbox tương ứng ở bảng điều khiển
+                const checkboxId = id.replace('-wrapper', '-checkbox');
+                const cb = document.getElementById(checkboxId);
+                if (cb) cb.checked = !el.classList.contains('chart-hidden');
+            }
+            showToast(el.classList.contains('chart-hidden') ? 'Đã ẩn biểu đồ' : 'Đã hiện biểu đồ');
+        }
+    } 
+    </script>
 </body>
 </html>
