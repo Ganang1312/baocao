@@ -1477,10 +1477,9 @@
 
             const processedContestData = processFullContestData(contestData, daysRemaining);
             
-            // Lấy danh sách ngành hàng từ cả Bảng Thi Đua và Bảng Kinh Doanh để đảm bảo hiển thị đầy đủ
+            // Lấy danh sách ngành hàng từ Bảng Thi Đua
             const categoriesFromContest = getUniqueContestCategories(processedContestData);
-            const categoriesFromMain = mainData.filter(row => row["Nhóm ngành hàng"] && row["Nhóm ngành hàng"] !== "Tổng").map(row => row["Nhóm ngành hàng"]);
-            allContestCategories = Array.from(new Set([...categoriesFromContest, ...categoriesFromMain])).sort();
+            allContestCategories = categoriesFromContest;
             
             loadContestCategoryFilter(allContestCategories); 
             const selectAllCheckbox = document.getElementById('selectAllContestCategories');
